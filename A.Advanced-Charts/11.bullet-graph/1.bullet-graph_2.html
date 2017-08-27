@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+  background: rgba(0,0,0,.1);
+  font: 12px/1.4 arial;
+  text-align: center;
+  list-style-position: inside;
+  color: #333;
+}
+text {
+  fill: #555;
+}
+.ChartBox {
+    padding: 1em;
+    display: inline-block;
+    background: #fff;
+    box-shadow: 0 2px 3px rgba(0,0,0,.1);
+    border-radius: 3px;
+    position: relative;
+}
+.axis path, .axis line {
+  	fill: none;
+  	stroke: rgba(0,0,0,.2);
+  	shape-rendering: crispEdges;
+}
+.y.axis line {
+	stroke: rgba(0,0,0,.05);
+	shape-rendering: crispEdges;
+}
+.Tooltip {
+    line-height: 1;
+    padding: 10px 15px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #eee;
+    border-radius: 3px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    position: absolute;
+    white-space: nowrap;
+}
+.Tooltip:after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    border: 5px solid transparent;
+    border-top-color: rgba(0,0,0,.8);
+    margin-left: -5px;
+}
+.Tooltip.Top:after {
+	top: auto;
+	bottom: 100%;
+	border-top-color: transparent;
+	border-bottom-color: rgba(0,0,0,.8);
+}
+.Tooltip.Right:after {
+	left: auto;
+	margin-left: 0;
+	right: 10px;
+}
+button {
+  	position: absolute;
+  	right: 10px;
+  	top: 10px;
+}
+svg.bullet {
+	margin: 1em 0;
+	display: block;
+}
+.bullet .marker { stroke: #000; stroke-width: 3px; shape-rendering: crispEdges; }
+.bullet .range.s0 { fill: #05c; fill-opacity: .1; }
+.bullet .range.s1 { fill: #05c; fill-opacity: .1; }
+.bullet .range.s2 { fill: #05c; fill-opacity: .1; }
+.bullet .measure.s0 { fill: #05c; fill-opacity: .2; }
+.bullet .measure.s1 { fill: #05c; }
+.bullet .title { font-weight: bold; }
+.bullet .subtitle { fill: #999; }
+.Cont {
+    display: block;
+    background: #fff;
+    padding: 1em;
+    font-size: 15px;
+    text-align: left;
+    margin: 1em;
+}
+
+</style>
+</head>
+<body>
+
+<div class="ChartBox"></div>
+<div class="Cont">
+	<h2>List of Changes</h2>
+	<ol>
+		<li>Added rectangle single color</li>
+		<li>Added rectangle opacity based on color</li>
+		<li>Added tooltip and position</li>
+	</ol>
+</div>
+<!-- <button>Update</button> -->
+
+<script src="../../js/jquery.js"></script>
+<script src="../../js/d3.v3.min.js"></script>
+<script src="js/bullet.js"></script>
+<script>
+
+	var margin = {top: 5, right: 20, bottom: 20, left: 150},
+	    width = 800 - margin.left - margin.right,
+	    height = 50 - margin.top - margin.bottom;
+
+	var color = d3.scale.category20c();
+
+	var chart = d3.bullet()
+	    .width(width)
+	    .height(height);
+
+	d3.json("bullets.json", function(error, data) {
+	  if (error) throw error;
+
+	  var svg = d3.select(".ChartBox").selectAll("svg")
+	      .data(data)
+	    .enter().append("svg")
+	      .attr("class", "bullet")
+	      .attr("width", width + margin.left + margin.right)
+	      .attr("height", height + margin.top + margin.bottom)
+	    .append("g")
+	      .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+	      .call(chart)
+
+	  var title = svg.append("g")
+	      .style("text-anchor", "end")
+	      .attr("transform", "translate(-6," + height / 2 + ")");
+
+	  title.append("text")
+	      .attr("class", "title")
+	      .text(function(d) { return d.title; });
+
+	  title.append("text")
+	      .attr("class", "subtitle")
+	      .attr("dy", "1em")
+	      .text(function(d) { return d.subtitle; });
+
+	  /*d3.selectAll("button").on("click", function() {
+	    svg.datum(randomize).call(chart.duration(1000)); // TODO automatic transition
+	  });*/
+	});
+
+	/*function randomize(d) {
+	  if (!d.randomizer) d.randomizer = randomizer(d);
+	  d.ranges = d.ranges.map(d.randomizer);
+	  d.markers = d.markers.map(d.randomizer);
+	  d.measures = d.measures.map(d.randomizer);
+	  return d;
+	}
+
+	function randomizer(d) {
+	  var k = d3.max(d.ranges) * .2;
+	  return function(d) {
+	    return Math.max(0, d + k * (Math.random() - .5));
+	  };
+	}*/
+
+</script>
+</body>
+</html>

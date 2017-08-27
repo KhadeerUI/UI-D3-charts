@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body { 
+  font: 12px/1.4 arial;
+  background: rgba(0,0,0,.1);
+  text-align: center;
+  color: #333;
+}
+text {
+  fill: #555;
+}
+.axis line,
+.axis path {
+  fill: none;
+  stroke: rgba(0,0,0,.2);
+  shape-rendering: crispEdges;
+}
+.ChartBox {
+  padding: 1em;
+  display: inline-block;
+  background: #fff;
+  box-shadow: 0 2px 3px rgba(0,0,0,.1);
+  border-radius: 3px;
+  position: relative;
+}
+.Cont {
+  display: block;
+  background: #fff;
+  padding: 1em;
+  font-size: 15px;
+  text-align: left;
+  margin: 1em;
+}
+.Tooltip {
+  padding: 5px 10px;
+  position: absolute;
+  white-space: nowrap;
+  background: rgba(0,0,0,.8);
+  color: #fff;
+  border-radius: 3px;
+}
+.Tooltip:after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  border: 5px solid transparent;
+  border-right-color: rgba(0,0,0,.8);
+  margin-top: -5px;
+}
+.Tooltip.Right:after {
+  top: 50%;
+  right: auto;
+  left: 100%;
+  border-right-color: transparent;
+  border-left-color: rgba(0,0,0,.8);
+}
+.GridLines line {
+  stroke: rgba(0,0,0,.05);
+  shape-rendering: crispEdges;
+}
+.Title {
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 700;
+  padding: 10px 0;
+}
+.Legends ul {
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+}
+.Legends ul li {
+  padding: 1em 1em .2em;
+  line-height: 1.2;
+  display: inline-block;
+}
+.Legends li > :first-child, .Legends li > :last-child {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 5px;
+}
+.Legends li > :last-child {
+  margin-right: 0;
+  color: #555;
+}
+.Legends.Right {
+  width: 150px;
+  vertical-align: top;
+  display: inline-block;
+}
+.Legends.Right ul {
+  margin-top: 0;
+}
+.Legends.Right ul li {
+  text-align: left;
+  padding: 10px 0;
+  display: block;
+}
+.Legends.Right li > :first-child {
+  margin-right: 0;
+  width: 35px;
+}
+.Legends.Right li > :last-child {
+  width: calc(100% - 35px)
+}
+.Legends li line {
+  stroke-width: 2.5px;
+}
+
+
+</style>
+</head>
+<body>
+
+<div class="ChartBox"></div>
+<div class="Cont">
+  <h2>List of Changes</h2>
+  <ol>
+    <li>Added Y axis grid lines in the chart background</li>
+    <li>Bar animation</li>
+    <li>Added legends and X and Y axis labels</li>
+  </ol>
+</div>  
+
+<script src="../js/d3.v3.min.js"></script>
+<script src="../js/jquery.js"></script>
+<script>
+
+  var causes = ["wounds", "other", "disease"];
+
+  var parseDate = d3.time.format("%m/%Y").parse;
+
+  var formatDate = d3.time.format("%b %Y");
+
+  var margin = {top: 20, right: 20, bottom: 80, left: 80},
+      width = 960 - margin.left - margin.right,
+      height = 500 - margin.top - margin.bottom;
+
+  var x = d3.scale.ordinal()
+      .rangeRoundBands([0, width],.1);
+
+  var y = d3.scale.linear()
+      .rangeRound([height, 0]);
+
+  //var color = d3.scale.category20();
+
+  var color = d3.scale.ordinal()
+    .range(['#d3553d','#ddd','#05c'])
+
+  var xAxis = d3.svg.axis()
+      .scale(x)
+      .orient("bottom")
+      .tickFormat(formatDate);
+
+  var yAxis = d3.svg.axis()
+      .scale(y)
+      .orient("left");
+
+  var title = d3.select('.ChartBox').append('div')
+      .attr('class','Title')
+      .text('Stacked Bar Chart');
+
+  var svg = d3.select(".ChartBox").append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+  d3.tsv("crimea.tsv", type, function(error, crimea) {
+    if (error) throw error;
+
+    var layers = d3.layout.stack()(causes.map(function(c) {
+      return crimea.map(function(d) {
+        return {x: d.date, y: d[c]};
+      });
+    }));
+
+    x.domain(layers[0].map(function(d) { return d.x; }));
+    y.domain([0, d3.max(layers[layers.length - 1], function(d) { return d.y0 + d.y; })]).nice();
+
+    svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis)
+        .selectAll('text')
+        .attr('transform','rotate(-45)')
+        .attr('x',-7)
+        .attr('y',7)
+        .style('text-anchor','end');
+
+    svg.append("g")
+        .attr("class", "y axis")
+        .call(yAxis)
+
+    svg.append('g').attr('class','xLabel');
+    svg.append('g').attr('class','yLabel');
+
+    svg.select('.xLabel')
+      .attr('transform','translate('+ width +','+ (height+margin.bottom-2) +')')
+      .append('text')
+      .text('Date')
+      .style('text-anchor','end')
+
+    svg.select('.yLabel')
+      .attr('transform','translate('+ (-margin.left+20) +',0)')
+      .append('text')
+      .text('Values')
+      .attr('transform','rotate(-90)')
+      .style('text-anchor','end')
+
+    svg.append('g')
+      .attr('class','GridLines')
+      .selectAll('.GridLines line')
+      .data(y.ticks(10))
+      .enter().append('line')
+      .attr('x2', width)
+      .attr('y1', y)
+      .attr('y2', y);
+
+    var layer = svg.selectAll(".layer")
+        .data(layers)
+        .enter().append("g")
+        .attr("class", "layer")
+        .style("fill", function(d, i) { return color(i); })
+        .style('shape-rendering','crispEdges');
+
+    layer.selectAll("rect")
+        .data(function(d) { return d; })
+        .enter().append("rect")
+        .attr("y", height)
+        .attr("height", 0)
+        .transition()
+        .duration(500)
+        .delay(function(d,i){ return i*10 })
+        .attr("x", function(d) { return x(d.x); })
+        .attr("y", function(d) { return y(d.y + d.y0); })
+        .attr("height", function(d) { return y(d.y0) - y(d.y + d.y0); })
+        .attr("width", x.rangeBand() - 1);
+
+    layer.selectAll('rect')
+        .on('mouseover',function(d,i){
+          d3.select(this)
+            .attr('fill-opacity',.5)
+          var tooltip = d3.select('.ChartBox').append('div')
+              .attr('class','Tooltip');
+          tooltip.style('opacity',0)
+            .transition()
+            .duration(500)
+            .style('opacity',1);
+          tooltip.append('text')
+            .text( d.y )
+
+            var boxWidth = $('.ChartBox').innerWidth(),
+                boxHeight = $('.ChartBox').innerWidth(),
+                boxofLeft = $('.ChartBox').offset().left,
+                boxofTop = $('.ChartBox').offset().top,
+                tooltipW = $('.Tooltip').innerWidth(),
+                tooltipH = $('.Tooltip').innerHeight(),
+                barWidth = parseInt(d3.select('.layer rect').attr('width')),
+                barHeight = parseInt(d3.select('.layer rect').attr('height')),
+                barofLeft = $(this).offset().left,
+                barofTop = $(this).offset().top;
+
+            tooltip.style({
+              left: (barofLeft - boxofLeft) + (barWidth) + 'px',
+              top: (barofTop - boxofTop) - ((barHeight - tooltipH)/2) + 'px'
+            })
+            if((boxWidth/1.5) <= barofLeft ){
+                $('.Tooltip').addClass('Right');
+                tooltip.style({
+                  left: (barofLeft - boxofLeft) - tooltipW + 'px'
+                })
+            }
+
+        })
+        .on('mouseout',function(){
+          d3.select(this).attr('fill-opacity',1)
+          d3.select('.Tooltip').remove();
+        })
+
+    /*============= Legends ==============*/
+    var legends = d3.select('.ChartBox').append('div')
+      .attr('class','Legends') // ====== if legends right side add class name 'Right'
+      //.classed('Right',true)
+      .append('ul');
+    var legend = legends.selectAll('.Legend')
+      .data(causes)
+      .enter().append('li')
+      .attr('class','Legend');
+    legend.append('svg')
+      .attr('width', 25)
+      .attr('height', 10)
+      .append('line')
+      .attr('x1', 0)
+      .attr('x2', 25)
+      .attr('y1', 5)
+      .attr('y2', 5)
+      .attr('stroke',color)
+    legend.append('span')
+      .text(function(d){ return d });
+    /* ========== End Legends ========= */
+    
+
+  });
+
+  function type(d) {
+    d.date = parseDate(d.date);
+    causes.forEach(function(c) { d[c] = +d[c]; });
+    return d;
+  }
+
+</script>
+</body>
+</html>

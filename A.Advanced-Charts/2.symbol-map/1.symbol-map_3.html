@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+  background: rgba(0,0,0,.1);
+  font: 12px/1.4 arial;
+  text-align: center;
+  list-style-position: inside;
+  color: #333;
+}
+text {
+  fill: #555;
+}
+.ChartBox {
+    padding: 1em;
+    display: inline-block;
+    background: #fff;
+    box-shadow: 0 2px 3px rgba(0,0,0,.1);
+    border-radius: 3px;
+    position: relative;
+}
+.axis path, .axis line {
+      fill: none;
+      stroke: rgba(0,0,0,.2);
+      shape-rendering: geometricPrecision;
+  }
+  path.line {
+      fill: none;
+      stroke-width: 1px;
+  }
+  .y.axis line {
+    stroke: #f2f2f2;
+  }
+  .Tooltip {
+    line-height: 1;
+    padding: 10px 15px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #eee;
+    border-radius: 3px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    position: absolute;
+    white-space: nowrap;
+  }
+  /* Creates a small triangle extender for the tooltip */
+  .Tooltip:after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    border: 5px solid transparent;
+    border-top-color: rgba(0,0,0,.8);
+    margin-left: -5px;
+  }
+  .Tooltip.Right:after {
+    left: auto;
+    top: 50%;
+    right: -10px;
+    border-top-color: transparent;
+    border-left-color: rgba(0,0,0,.8);
+    margin-top: -5px;
+  }
+  .Tooltip.Left:after {
+    left: auto;
+    top: 50%;
+    right: 100%;
+    border-top-color: transparent;
+    border-right-color: rgba(0,0,0,.8);
+    margin-top: -5px;
+  }
+	.states {
+	  fill: #eee;
+	  stroke: #ccc;
+	}
+  .Cont {
+      display: block;
+      background: #fff;
+      padding: 1em;
+      font-size: 15px;
+      text-align: left;
+      margin: 1em;
+  }
+  .StateText {
+    fill: #333;
+    stroke: none;
+  }
+  .Circle {
+    fill: #05c;
+    stroke: #05c;
+    fill-opacity: .5;
+    stroke-width: 1.2px;
+  }
+
+
+
+</style>
+</head>
+<body>
+
+<div class="ChartBox"></div>
+<div class="Cont">
+  <h2>List of Changes</h2>
+  <ol>
+    <li>All circle size same width and height</li>
+    <li>Added tooltip position for all countries and population</li>
+    <li></li>
+  </ol>
+</div>
+
+<script src="../../js/jquery.js"></script>
+<script src="../../js/d3.v3.min.js"></script>
+<script src="../../js/queue.v1.min.js"></script>
+<script src="../../js/topojson.v1.min.js"></script>
+<script>
+
+	var width = 960,
+      height = 500;
+
+  var svg = d3.select('.ChartBox').append('svg')
+    .attr('width',width)
+    .attr('height',height);
+
+  var projection = d3.geo.albersUsa()
+    .scale(1280)
+    .translate([width/2, height/2]);
+
+  var path = d3.geo.path()
+    .projection(projection);
+
+  var stateIdMap = d3.map({
+    1: 'Alabama',
+    2: 'Alaska',
+    3: 'Arizona',
+    4: 'Arkansas',
+    5: 'California'
+  });
+
+  queue()
+    .defer(d3.json, 'us.json')
+    .await(function(err, US){
+      var states = svg.append('g')
+        .attr('class','states')
+        .selectAll('g')
+        .data(topojson.feature(US, US.objects.states).features)
+        .enter()
+        .append('g');
+
+      states.append('path')
+        .attr('d', path);
+
+      /*states.append('path')
+        .datum(topojson.mesh(US, US.objects.states,function(a,b){ return a !== b; }))
+        .attr('class','borders')
+        .attr('d', path);*/
+
+      states.append('text')
+        .attr('class','StateText')
+        .text(function(d){ return stateIdMap.get(d.id) || d.id; })
+        .attr({
+          x: function(d){ return path.centroid(d)[0] || 0; },
+          y: function(d){ return path.centroid(d)[1] || 0; },
+          'text-anchor':'middle'
+        })
+
+    });
+
+</script>
+</body>
+</html>

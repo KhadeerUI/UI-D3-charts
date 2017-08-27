@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+  background: rgba(0,0,0,.1);
+  font: 12px/1.4 arial;
+  text-align: center;
+  list-style-position: inside;
+  color: #333;
+}
+text {
+  fill: #555;
+}
+.ChartBox {
+    padding: 1em;
+    display: inline-block;
+    background: #fff;
+    box-shadow: 0 2px 3px rgba(0,0,0,.1);
+    border-radius: 3px;
+    position: relative;
+}
+.axis path, .axis line {
+      fill: none;
+      stroke: rgba(0,0,0,.2);
+      shape-rendering: crispEdges;
+  }
+  path.line {
+      fill: none;
+      stroke-width: 1px;
+  }
+  .GridLines line {
+    stroke: rgba(0,0,0,0.05);
+    shape-rendering: crispEdges;
+  }
+  .Tooltip {
+    line-height: 1;
+    padding: 10px 15px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #eee;
+    border-radius: 3px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    position: absolute;
+    white-space: nowrap;
+  }
+  /* Creates a small triangle extender for the tooltip */
+  .Tooltip:after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    border: 6px solid transparent;
+    border-top-color: rgba(0,0,0,.8);
+    margin-left: -6px;
+  }
+  .Tooltip.Right:after {
+    left: auto;
+    right: 10px;
+    margin-left: 0;
+  }
+  .Tooltip.Left:after {
+    left: 10px;
+    right: auto;
+    margin-left: 0;
+  }
+  .bar {
+    shape-rendering: crispEdges;
+  }
+  .Cont {
+    display: block;
+    background: #fff;
+    padding: 1em;
+    font-size: 15px;
+    text-align: left;
+    margin: 1em;
+  }
+  .Legends ul {
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
+  }
+  .Legends ul li {
+    padding: 1em 1em .2em;
+    line-height: 1.2;
+    display: inline-block;
+  }
+  .Legends li > :first-child, .Legends li > :last-child {
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 5px;
+  }
+  .Legends li > :last-child {
+    margin-right: 0;
+    color: #555;
+  }
+  .Legends.Right {
+    width: 150px;
+    vertical-align: top;
+    display: inline-block;
+  }
+  .Legends.Right ul {
+    margin-top: 0;
+  }
+  .Legends.Right ul li {
+    text-align: left;
+    padding: 10px 0;
+    display: block;
+  }
+  .Legends.Right li > :first-child {
+    margin-right: 0;
+    width: 35px;
+  }
+  .Legends.Right li > :last-child {
+    width: calc(100% - 35px)
+  }
+  .Legends li line {
+    stroke-width: 2.5px;
+  }
+
+
+
+</style>
+</head>
+<body>
+
+<div class="ChartBox"></div>
+<div class="Cont">
+  <h2>List of Changes</h2>
+  <ol>
+    <li>Added Y axis grid lines in the chart background</li>
+    <li>Rectangle animation</li>
+    <li>Tooltip position</li>
+  </ol>
+</div>
+
+<script src="../../js/jquery.js"></script>
+<script src="../../js/d3.v3.min.js"></script>
+<script>
+
+	var margin = {top: 20, right: 20, bottom: 80, left: 80},
+      width = 960 - margin.left - margin.right,
+      height = 500 - margin.top - margin.bottom;
+
+  var parseDate = d3.time.format("%m/%d/%Y %I:%M:%S %p").parse;
+  var formatDate = d3.time.format("%b %Y");
+  var formatCount = d3.format(",.0f");
+
+  var x = d3.time.scale().range([0, width]);
+  var y = d3.scale.linear().range([height, 0]);
+
+  var color = '#05c';
+
+  var xAxis = d3.svg.axis().scale(x)
+    .orient("bottom").tickFormat(formatDate);
+
+  var yAxis = d3.svg.axis().scale(y)
+    .orient("left").ticks(10);
+
+  // Create the SVG drawing area
+  var svg = d3.select(".ChartBox").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+  // Get the data
+  d3.csv("Rat_Sightings.csv", function(error, data) {
+
+    // Parse the date strings into javascript dates
+    data.forEach(function(d) {
+      d.created_date = parseDate(d["Created Date"]);
+    });
+
+    // Determine the first and list dates in the data set
+    var monthExtent = d3.extent(data, function(d) { return d.created_date; });
+
+    // Create one bin per month, use an offset to include the first and last months
+    var monthBins = d3.time.months(d3.time.month.offset(monthExtent[0],-1),
+                                   d3.time.month.offset(monthExtent[1],1));
+
+    // Use the histogram layout to create a function that will bin the data
+    var binByMonth = d3.layout.histogram()
+      .value(function(d) { return d.created_date; })
+      .bins(monthBins);
+
+    // Bin the data by month
+    var histData = binByMonth(data);
+
+    // Scale the range of the data by setting the domain
+    x.domain(d3.extent(monthBins));
+    y.domain([0, d3.max(histData, function(d) { return d.y; })]);
+
+    // Add the X Axis
+    svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis)
+        .selectAll('text')
+        .attr('transform','rotate(-45)')
+        .attr('x','-5')
+        .attr('y',5)
+        .style('text-anchor','end');
+
+    svg.append('g').attr('class','xLabel');
+    svg.append('g').attr('class','yLabel');
+
+    svg.select('.xLabel')
+      .attr('transform','translate('+ width +','+ (height+margin.bottom -2) +')')
+      .append('text')
+      .text('Date')
+      .style('text-anchor','end')
+
+    svg.select('.yLabel')
+      .attr('transform','translate('+ (-margin.left + 20) +',0)')
+      .append('text')
+      .text('Number of Sightings')
+      .attr('transform','rotate(-90)')
+      .style('text-anchor','end')
+
+    // Add the Y Axis and label
+    svg.append("g")
+       .attr("class", "y axis")
+       .call(yAxis)
+
+    svg.append('g')
+      .attr('class','GridLines')
+      .selectAll('.GridLines line')
+      .data(y.ticks(10))
+      .enter().append('line')
+      .attr('x2',width)
+      .attr('y1',y)
+      .attr('y2',y);
+
+
+    // Set up one bar for each bin
+    // Months have slightly different lengths so calculate the width for each bin
+    // Note: dx, the width of the histogram bin, is in milliseconds so convert the x value
+    // into UTC time and convert the sum back to a date in order to help calculate the width
+    // Thanks to npdoty for pointing this out in this stack overflow post:
+    // http://stackoverflow.com/questions/17745682/d3-histogram-date-based
+    svg.selectAll(".bar")
+        .data(histData)
+      .enter().append("rect")
+        .attr("class", "bar")
+        .attr('fill','#05c')
+        .attr('y', height)
+        .attr('height', 0)
+        .transition()
+        .duration(1000)
+        .ease('elastic')
+        .delay(function(d,i){ return i*20 })
+        .attr("x", function(d) { return x(d.x); })
+        .attr("width", function(d) { return x(new Date(d.x.getTime() + d.dx))-x(d.x)-1; })
+        .attr("y", function(d) { return y(d.y); })
+        .attr("height", function(d) { return height - y(d.y); })
+
+    svg.selectAll(".bar")
+      .on('mouseover',function(d,i){ 
+          var tooltip = d3.select('.ChartBox').append('div')
+            .classed('Tooltip',true);
+          tooltip.style('opacity',0)
+            .transition()
+            .duration(500)
+            .style('opacity',1);
+
+          tooltip.html( (i+1) + ' Value: ' + d.y );
+
+          var tooltipWidth = $('.Tooltip').innerWidth(),
+              tooltipHeight = $('.Tooltip').innerHeight(),
+              barWidth = parseInt(d3.select('.bar').attr('width')),
+              barHeight = parseInt(d3.select('.bar').attr('height')),
+              barofTop = $(this).offset().top,
+              barofLeft = $(this).offset().left,
+              boxWidth = $('.ChartBox').innerWidth(),
+              boxHeight = $('.ChartBox').innerHeight()
+              boxofTop = $('.ChartBox').offset().top,
+              boxofLeft = $('.ChartBox').offset().left;
+
+          tooltip.style({
+            top: (barofTop - boxofTop) - (tooltipHeight+10) + 'px',
+            left: (barofLeft - boxofLeft) - ((tooltipWidth - barWidth)/2) + 'px'
+          })
+          if((barofTop - boxofTop) <= (tooltipHeight+10)){
+            tooltip.classed('Top',true);
+            tooltip.style({
+              top: (barofTop - boxofTop) + 'px'
+            })
+          }
+          if( (boxWidth - ((barofLeft + (barWidth)) - boxofLeft)) <= ((tooltipWidth - barWidth)/2)){
+            tooltip.classed('Right',true);
+            tooltip.style({
+              left: (barofLeft - boxofLeft) - (tooltipWidth - barWidth - 10) + 'px'
+            })
+          }
+          if( (barofLeft - boxofLeft) <= ((tooltipWidth + barWidth)/2) ){
+            tooltip.classed('Left',true);
+            tooltip.style({
+              left: (barofLeft - boxofLeft) - (barWidth/2) + 'px'
+            })
+          }
+      })
+      .on('mouseout',function(){ 
+          d3.select('.Tooltip').remove();
+      })
+
+      /*============= Legends ==============*/
+      var legends = d3.select('.ChartBox').append('div')
+        .attr('class','Legends') // ====== if legends right side add class name 'Right'
+        //.classed('Right',true)
+        .append('ul');
+      var legend = legends.selectAll('.Legend')
+        .data([1])
+        .enter().append('li')
+        .attr('class','Legend');
+      legend.append('svg')
+        .attr('width', 25)
+        .attr('height', 10)
+        .append('line')
+        .attr('x1', 0)
+        .attr('x2', 25)
+        .attr('y1', 5)
+        .attr('y2', 5)
+        .attr('stroke',color)
+      legend.append('span')
+        .text('Sighting Data');
+      /* ========== End Legends ========= */
+
+
+  });
+
+</script>
+</body>
+</html>

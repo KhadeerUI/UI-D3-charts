@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+	background: rgba(0,0,0,.1);
+	font: 12px/1.4 arial;
+	text-align: center;
+	list-style-position: inside;
+	color: #333;
+}
+.ChartBox {
+	padding: 1em;
+	display: inline-block;
+	background: #fff;
+	box-shadow: 0 2px 3px rgba(0,0,0,.1);
+	border-radius: 3px;
+	position: relative;
+}
+.axis path, .axis line {
+	fill: none;
+	stroke: rgba(0,0,0,.2);
+	shape-rendering: crispEdges;
+}
+.GridLines line {
+	stroke: rgba(0,0,0,.05);
+}
+.d3-tip {
+	line-height: 1;
+	padding: 10px 15px;
+	background: rgba(0, 0, 0, 0.8);
+	color: #eee;
+	border-radius: 3px;
+	box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+.d3-tip:after {
+	content: '';
+	position: absolute;
+	left: 50%;
+	top: 100%;
+	border: 6px solid transparent;
+	border-top-color: rgba(0,0,0,.8);
+	margin-left: -6px;
+}
+.Cont {
+    display: block;
+    background: #fff;
+    padding: 1em;
+    font-size: 15px;
+    text-align: left;
+    margin: 1em;
+}
+  
+
+
+
+
+
+</style>
+</head>
+<body>
+
+<div class="ChartBox">
+	<!-- <svg width="960" height="880"></svg> -->
+</div>
+
+<script src="../../js/jquery.js"></script>
+<script src="../../js/d3.v4.min.js"></script>
+<script>
+
+	/*var svg = d3.select("svg"),
+	    width = +svg.attr("width");*/
+
+	var margin = { top: 20, right: 20, bottom: 20, left: 20 },
+		width = 800,
+		height = 400;
+
+	var format = d3.format(",d");
+
+	var color = d3.scaleOrdinal(d3.schemeCategory20c);
+
+	var x = d3.scaleLinear().range([0, width]),
+		y = d3.scaleLinear().range([height, 0]);
+
+	var pack = d3.pack()
+	    .size([width, width])
+	    .padding(1);
+
+	d3.csv("flare.csv", function(d) {
+	  d.value = +d.value;
+	  if (d.value) return d;
+	}, function(error, classes) {
+	  if (error) throw error;
+
+	  var root = d3.hierarchy({children: classes})
+	      .sum(function(d) { return d.value; })
+	      .each(function(d) {
+	        if (id = d.data.id) {
+	          var id, i = id.lastIndexOf(".");
+	          d.id = id;
+	          d.package = id.slice(0, i);
+	          d.class = id.slice(i + 1);
+	        }
+	      });
+
+	  var svg = d3.select('.ChartBox').append('svg')
+	  	.attr('width',width)
+	  	.attr('height',height);
+
+	  var node = svg.selectAll(".node")
+	    .data(pack(root).leaves())
+	    .enter().append("g")
+	      .attr("class", "node")
+	      .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+
+	  node.append("circle")
+	      .attr("id", function(d) { return d.id; })
+	      .attr("r", function(d) { return d.r; })
+	      .style("fill", function(d) { return color(d.package); });
+
+	  node.append("clipPath")
+	      .attr("id", function(d) { return "clip-" + d.id; })
+	    .append("use")
+	      .attr("xlink:href", function(d) { return "#" + d.id; });
+
+	  node.append("text")
+	      .attr("clip-path", function(d) { return "url(#clip-" + d.id + ")"; })
+	    .selectAll("tspan")
+	    .data(function(d) { return d.class.split(/(?=[A-Z][^A-Z])/g); })
+	    .enter().append("tspan")
+	      .attr("x", 0)
+	      .attr("y", function(d, i, nodes) { return 13 + (i - nodes.length / 2 - 0.5) * 10; })
+	      .text(function(d) { return d; })
+	      .style('text-anchor','middle');
+
+	  node.append("title")
+	      .text(function(d) { return d.id + "\n" + format(d.value); });
+	});
+
+</script>
+</body>
+</html>

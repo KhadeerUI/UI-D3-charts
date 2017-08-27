@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>D3 JS</title>
+		<style>
+
+			body {
+			  font: 12px/1.4 arial;
+			  text-align: center;
+			  background: rgba(0,0,0,.1);
+			  color: #333;
+			}
+			text {
+				fill: #555;
+			}
+			text.shadow {
+			  stroke: #fff;
+			  stroke-width: 3px;
+			}
+			path { 
+			    stroke: #05c;
+			    fill: none;
+			}
+			.axis path,
+			.axis line {
+			    fill: none;
+			    stroke: rgba(0,0,0,.2);
+			    shape-rendering: crispEdges;
+			}
+			.y.axis .tick:first-child line {
+				stroke-opacity: 0;
+			}
+			.grid line {
+			    stroke: #f2f2f2;
+			    shape-rendering: crispEdges;
+			}
+			.grid path {
+			    stroke-width: 0;
+			}
+			.line {
+				stroke-width: 2.5px;
+			}
+			.area {
+			    fill: rgba(0,85,204,.3);
+			    stroke-width: 0;
+			}
+
+			.CircleG circle {
+				stroke: #05c;
+				stroke-width: 1.5px;
+				fill: #fff;
+				transition: fill ease-in .2s;
+				-webkit-transition: fill ease-in .2s;
+				-ms-transition: fill ease-in .2s;
+			}
+			.CircleG circle:hover {
+				stroke-width: 2px;
+				fill: #05c;
+			}
+			div.Tooltip {	
+			    position: absolute;			
+			    text-align: center;			
+			    padding: 10px 1em;			
+			    background: rgba(0,0,0,.8);
+			    color: #eee;
+			    box-shadow: 0 0 3px rgba(0,0,0,.3);
+			    border: 0px;		
+			    border-radius: 3px;			
+			    pointer-events: none;	
+			}
+			div.Tooltip:after {
+				content: '';
+			    position: absolute;
+			    top: 100%;
+			    left: 50%;
+			    margin-left: -6px;
+			    border: 6px solid transparent;
+			    border-top-color: rgba(0,0,0,.8);
+			}
+			div.Tooltip.Top:after {
+				top: auto;
+				bottom: 100%;
+				border-top-color: transparent;
+				border-bottom-color: rgba(0,0,0,.8);
+			}
+			div.Tooltip.Right:after {
+				left: auto;
+				right: 10px;
+			}
+			div.Tooltip.Left:after {
+				left: 20px;
+			}
+			div.Tooltip.Right:after {
+				left: auto;
+				right: 20px;
+			}
+			.ChartBox {
+				display: inline-block;
+				background: #fff;
+				box-shadow: 0 2px 2px rgba(0,0,0,0.1);
+				padding: 1em;
+				border-radius: 3px;
+			}
+			.Cont {
+				display: block;
+				background: #fff;
+				padding: 1em;
+				font-size: 15px;
+				text-align: left;
+				margin: 1em;
+			}
+			.GridLines line {
+				stroke: rgba(0,0,0,.05);
+			}
+			.GridLines line:first-child {
+				stroke-opacity: 0;
+			}
+			.Legends ul {
+			  margin: 0;
+			  padding: 0;
+			  list-style-type: none;
+			}
+			.Legends ul li {
+			  padding: 1em 1em .2em;
+			  line-height: 1.2;
+			  display: inline-block;
+			}
+			.Legends li > :first-child, .Legends li > :last-child {
+			  display: inline-block;
+			  vertical-align: middle;
+			  margin-right: 5px;
+			}
+			.Legends li > :last-child {
+			  margin-right: 0;
+			  color: #555;
+			}
+			.Legends.Right {
+			  width: 150px;
+			  vertical-align: top;
+			  display: inline-block;
+			}
+			.Legends.Right ul {
+			  margin-top: 0;
+			}
+			.Legends.Right ul li {
+			  text-align: left;
+			  padding: 10px 0;
+			  display: block;
+			}
+			.Legends.Right li > :first-child {
+			  margin-right: 0;
+			  width: 35px;
+			}
+			.Legends.Right li > :last-child {
+			  width: calc(100% - 35px)
+			}
+			.Legends li line {
+			  stroke-width: 2.5px;
+			}
+
+
+		@media (max-width:640px) {
+			.svgRes {
+				width: auto;
+				height: auto;
+			}
+		}
+
+
+		</style>
+	</head>
+	<body>
+
+		<div class="ChartBox"></div>
+		<div class="Cont">
+			<h2>List of Changes</h2>
+			<ol>
+				<li>Line chart style changed to cardinal style</li>
+				<li>Added Y axis grid lines in the chart background</li>
+				<li>Customize tooltip</li>
+				<li>Added x and y axis labels</li>
+				<li>Add Legends bottom</li>
+			</ol>
+		</div>
+
+		<!-- <script src="js/d3.js"></script> -->
+		<script src="../js/jquery.js"></script>
+		<script src="../js/d3.v3.min.js"></script>
+		<script>
+
+			var margin = {top: 20, right: 20, bottom: 50, left: 60},
+			    width = 650 - margin.left - margin.right,
+			    height = 300 - margin.top - margin.bottom;
+
+			var parseDate = d3.time.format("%d-%b-%y").parse;
+				formatDate = d3.time.format('%d %b')
+				bisectDate = d3.bisector(function(d) { return d.date; }).left,
+			    formatValue = d3.format(",.1f"),
+			    formatCurrency = function(d) { return formatValue(d) + "%"; };
+
+			var x = d3.time.scale()
+				.range([0, width]);
+
+			var y = d3.scale.linear()
+				.range([height, 0]);
+
+			var color = '#05C';
+
+			var xAxis = d3.svg.axis()
+			    .scale(x)
+			    .orient("bottom")
+			    .ticks(5)
+			    .tickFormat(formatDate);
+
+			var yAxis = d3.svg.axis()
+			    .scale(y)
+			    .orient("left")
+			    .ticks(5);
+
+			var area = d3.svg.area()
+				.interpolate('cardinal')
+			    .x(function(d) { return x(d.date); })
+			    .y0(height)
+			    .y1(function(d) { return y(d.close); })
+
+			var line = d3.svg.line()
+				.interpolate('cardinal')
+			    .x(function(d) { return x(d.date); })
+			    .y(function(d) { return y(d.close); });
+			    
+			var svg = d3.select(".ChartBox")
+			    .append("svg")
+			        .attr("width", width + margin.left + margin.right)
+			        .attr("height", height + margin.top + margin.bottom)
+			    .append("g")
+			        .attr("transform", 
+			              "translate(" + margin.left + "," + margin.top + ")");
+
+			
+			// Get the data
+			d3.csv("data2.csv", function(error, data) {
+			    data.forEach(function(d) {
+			        d.date = parseDate(d.date);
+			        d.close = +d.close;
+			    });
+
+			    // Scale the range of the data
+			    x.domain(d3.extent(data, function(d) { return d.date; }));
+			    y.domain([0, d3.max(data, function(d) { return d.close; })]);
+
+			    // Add the X Axis
+			    svg.append("g")
+			        .attr("class", "x axis")
+			        .attr("transform", "translate(0," + height + ")")
+			        .call(xAxis);
+
+			    // Add the Y Axis
+			    svg.append("g")
+			        .attr("class", "y axis")
+			        .call(yAxis);
+
+			    svg.append('g')
+				  	.attr('class','GridLines')
+				  	.selectAll('.Line')
+				  	.data(y.ticks(5))
+				  	.enter().append('line')
+				  	.attr('class','Line')
+				  	.attr('x1',0)
+				  	.attr('x2',width)
+				  	.attr('y1',y)
+				  	.attr('y2',y);
+
+			    // Add the filled area
+			    svg.append("path")
+			        .datum(data)
+			        .attr("class", "area")
+			        .attr("d", area);
+
+			    // Add the line path.
+			    svg.append("path")
+			    	.attr('class','line')
+			        .attr("d", line(data))
+			        .attr('fill',color);
+
+			    svg.append('g').attr('class','xLabel');
+			    svg.append('g').attr('class','yLabel');
+
+			    svg.select('.xLabel')
+			    	.attr('transform','translate('+ width +','+ (height+margin.bottom -5) +')')
+			    	.append('text')
+			    	.text('Date')
+			    	.style('text-anchor','end');
+
+			    svg.select('.yLabel')
+			    	.attr('transform','translate('+ (-margin.left+20) +',0)')
+			    	.append('text')
+			    	.text('Rate ($)')
+			    	.attr('transform','rotate(-90)')
+			    	.style('text-anchor','end')
+
+
+			    // Define the div for the tooltip
+				var div = d3.select(".ChartBox").append("div")	
+				    .attr("class", "Tooltip")				
+				    .style("opacity", 0);
+
+
+			    // Add the scatterplot
+				svg.append("g")
+					.attr('class','CircleG')
+					.selectAll('dot')	
+			        .data(data)		
+			    		.enter().append("circle")								
+				        .attr("r", 3)		
+				        .attr("cx", function(d) { return x(d.date); })		 
+				        .attr("cy", function(d) { return y(d.close); })
+				        .on("mousemove", function(e) {
+
+				        	var xPos = d3.event.clientX;
+				        	var yPos = d3.event.clientY;
+
+				        	console.log('xPos: '+xPos);
+				        	console.log('yPos: '+yPos);
+
+				            div.transition()		
+				                .duration(300)	
+				                .style("opacity", 1);
+
+			            	div.html("<span class='Text'>Currency Rate:</span> "+formatCurrency(e.close))	
+
+			            		var DocWidth = $(document).width(),
+				                	DocHeight = $(document).height(),
+				                	ChartH = $('.ChartBox').innerHeight(),
+				                	ChartW = $('.ChartBox').innerWidth(),
+				                	OffSetLeft = $('.ChartBox').offset().left,
+				                	OffSetTop = $('.ChartBox').offset().top;
+
+				                var OffSetRight = DocWidth - (OffSetLeft+ChartW),
+				                	OffSetBottom = DocHeight - (OffSetTop+ChartH);
+
+				                var ToolTipHeight = $('.Tooltip').innerHeight(),
+				                	ToolTipWidth = $('.Tooltip').innerWidth();
+
+				            div
+				                .style("left", (xPos - (ToolTipWidth/2) ) + "px")
+				                .style("top", (yPos - (ToolTipHeight + 15) ) + "px")
+				                $('.Tooltip').removeClass('Top')
+				                $('.Tooltip').removeClass('Right')
+				                $('.Tooltip').removeClass('Left')  
+
+				                if(yPos - (OffSetTop+15) <= ToolTipHeight){
+				                	console.log('Top')
+				                	$('.Tooltip').addClass('Top')
+				                	div.style('top', (yPos + 30) + "px")
+				                }
+				                
+				                if((xPos - OffSetLeft) <= ToolTipWidth){
+				                	console.log('left')
+				                	$('.Tooltip').addClass('Left')
+				                	div.style("left", (xPos - 20) + "px")
+				                }
+				                
+				                if(((ChartW + OffSetLeft) - xPos) <= ToolTipWidth ){
+				                	console.log('right');
+				                	$('.Tooltip').addClass('Right')
+				                	div.style("left", ((xPos - ToolTipWidth) + 20) + "px")
+				                }
+
+			            })
+				        .on("mouseout", function(d) {		
+				            div.transition()		
+				                .duration(500)		
+				                .style("opacity", 0);	
+				        });
+
+
+
+				/*============= Legends ==============*/
+		        var legends = d3.select('.ChartBox').append('div')
+		          .attr('class','Legends') // ====== if legends right side add class name 'Right'
+		          //.classed('Right',true)
+		          .append('ul');
+		        var legend = legends.selectAll('.Legend')
+		          .data([1])
+		          .enter().append('li')
+		          .attr('class','Legend');
+		        legend.append('svg')
+		          .attr('width', 25)
+		          .attr('height', 10)
+		          .append('line')
+		          .attr('x1', 0)
+		          .attr('x2', 25)
+		          .attr('y1', 5)
+		          .attr('y2', 5)
+		          .attr('stroke',color)
+		        legend.append('span')
+		          .text('Currency');
+		        /* ========== End Legends ========= */
+
+
+			});
+
+		</script>
+	</body>
+</html>

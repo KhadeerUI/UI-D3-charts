@@ -1,0 +1,3 @@
+A Pen created at CodePen.io. You can find this one at http://codepen.io/billdwhite/pen/rgEbc.
+
+ All the ways to put some extra information right next to your fabulous graphics.  Or your random coloured circles, as the case may be.  Implemented with d3.js, but the key aspects use basic Javascript methods.  A consolidation of a set of fiddles that I created in response to a [Stack Overflow question](http://stackoverflow.com/a/21156397/3128209).  UPDATED to include a CSS-only tooltip, and to have the tips' colour match the object that triggered them.

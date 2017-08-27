@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+  background: rgba(0,0,0,.1);
+  font: 12px/1.4 arial;
+  text-align: center;
+  list-style-position: inside;
+  color: #333;
+}
+.ChartBox {
+    padding: 1em;
+    display: inline-block;
+    background: #fff;
+    box-shadow: 0 2px 3px rgba(0,0,0,.1);
+    border-radius: 3px;
+}
+.axis path, .axis line {
+      fill: none;
+      stroke: rgba(0,0,0,.2);
+      shape-rendering: geometricPrecision;
+  }
+  .y.axis line {
+    stroke: #f2f2f2;
+  }
+  .d3-tip {
+    line-height: 1;
+    padding: 10px 15px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #eee;
+    border-radius: 3px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  }
+  /* Creates a small triangle extender for the tooltip */
+  .d3-tip:after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    border: 6px solid transparent;
+    border-top-color: rgba(0,0,0,.8);
+    margin-left: -6px;
+  }
+
+	svg .state text { text-anchor: end; font-size: 11px;}
+    svg .state path { stroke: #fff; stroke-width: 0.5px;}
+
+
+
+
+
+</style>
+</head>
+<body>
+
+<div class="ChartBox"></div>
+
+<script src="../../js/jquery.js"></script>
+<script src="../../js/d3.v3.min.js"></script>
+<script>
+
+	var margin = {top: 10, right: 10, bottom: 10, left: 10 },
+	    width = innerWidth - margin.left - margin.right,
+	    height = innerHeight - margin.top - margin.bottom;
+
+	var svg = d3.select('.ChartBox')
+	    .append('svg')
+	        .attr({ width: innerWidth, height: innerHeight })
+	    .append('g')
+	        .attr('transform', 'translate(' + [margin.left, margin.top] + ')');
+
+	var x = d3.scale.linear().range([0, width]),
+	    y = d3.scale.linear().range([height, 0]);
+
+	var area = d3.svg.area()
+	    .x(function(d) { return x(d.x); })
+	    .y0(function(d) { return y(d.y0); })
+	    .y1(function(d) { return y(d.y0 + d.y); });
+
+	var color = d3.scale.ordinal()
+	    .range(['#ecc', '#dbb', '#caa', '#b99', '#a88']);
+
+	d3.tsv('florida.csv', function(data) {
+
+	    var years = d3.keys(data[0])
+	        .filter(function(key) { return !isNaN(key); })
+	        .map(function(key) { return +key; });
+
+	    var layers = data.map(function(s) {
+	        return {
+	            name: s.born_state,
+	            region: s.born_region,
+	            values: years.map(function(yr) {
+	                return { x: +yr, y: +s[yr] };
+	            })
+	        };
+	    });
+
+	    var stack = d3.layout.stack()
+	        .values(function(d) { return d.values; });
+
+	    layers = stack(layers);
+
+	    x.domain(d3.extent(years));
+
+	    var maxY = d3.max(layers, function(layer) { 
+	        return d3.max(layer.values, function(d) {
+	            return d.y + d.y0; });
+	        });
+
+	    y.domain([0, maxY]);
+
+	    var state = svg.selectAll(".state")
+	        .data(layers)
+	      .enter().append("g")
+	        .attr("class", "state");
+
+	    state.append("path")
+	        .attr("class", "area")
+	        .attr("d", function(d) { return area(d.values); })
+	        .style("fill", function(d) { return color(d.region); });
+
+	    state
+	        .filter(function(d) { return d3.max(d.values, function(d) { return d.y; }) > 0.05; })
+	        .append("text")
+	        .datum(function(d) { return {
+	            name: d.name,
+	            value: d.values[d.values.length - 1]};
+	        })
+	        .attr("transform", function(d) { return "translate(" + x(d.value.x) + "," + y(d.value.y0 + d.value.y / 2) + ")"; })
+	        .attr("x", -6)
+	        .attr("dy", ".35em")
+	        .text(function(d) { return d.name; });
+
+	});
+
+</script>
+</body>
+</html>

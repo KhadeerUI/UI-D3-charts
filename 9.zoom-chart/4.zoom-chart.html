@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+  background: rgba(0,0,0,.1);
+  font: 12px/14 arial;
+  text-align: center;
+  list-style-position: inside;
+  color: #333;
+}
+text {
+  fill: #555;
+}
+.ChartBox {
+    padding: 1em;
+    display: inline-block;
+    background: #fff;
+    box-shadow: 0 2px 3px rgba(0,0,0,.1);
+    border-radius: 3px;
+}
+.axis path, .axis line {
+      fill: none;
+      stroke: rgba(0,0,0,.3);
+      shape-rendering: crispEdges;
+  }
+  path.line {
+      fill: none;
+      stroke-width: 1px;
+  }
+  path {
+    fill: none;
+    stroke: #05c;
+  }
+  .brush .extent {
+    stroke: #fff;
+    fill-opacity: .125;
+    shape-rendering: crispEdges;
+  }
+
+
+</style>
+</head>
+<body>
+
+<div class="ChartBox"></div>
+
+<script src="../js/d3.v3.min.js"></script>
+<script>
+  var margin = {top: 10, right: 10, bottom: 40, left: 40},
+      width = 960 - margin.left - margin.right,
+      height = 400 - margin.top - margin.bottom;
+      //height2 = 500 - margin2.top - margin2.bottom;
+   
+  var parseDate = d3.time.format("%Y-%m-%d %H:%M:%S").parse;
+   
+  var x = d3.time.scale().range([0, width]),
+      x2 = d3.time.scale().range([0, width]),
+      y = d3.scale.linear().range([height, 0]),
+      y2 = d3.scale.linear().range([height, 0]);
+   
+  var xAxis = d3.svg.axis().scale(x).orient("bottom"),
+      xAxis2 = d3.svg.axis().scale(x2).orient("bottom"),
+      yAxis = d3.svg.axis().scale(y).orient("left");
+   
+  var brush = d3.svg.brush()
+      .x(x2)
+      .on("brush", brush);
+   
+  var line = d3.svg.line()
+      .interpolate("cubic")
+      .x(function(d) { return x(d.date); })
+      .y(function(d) { return y(d.temp); });
+   
+  var line2 = d3.svg.line()
+      .interpolate("cubic")
+      .x(function(d) { return x2(d.date); })
+      .y(function(d) { return y2(d.temp); });
+   
+  var svg = d3.select(".ChartBox").append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom);
+   
+  svg.append("defs").append("clipPath")
+      .attr("id", "clip")
+    .append("rect")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom);
+   
+  var focus = svg.append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+   
+  /*var context = svg.append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");*/
+   
+  d3.csv("FortRoss1.data.csv", function(error, data) {
+    data.forEach(function(d) {
+      d.date = parseDate(d.date);
+      d.temp = +d.temp;
+    });
+   
+    x.domain(d3.extent(data.map(function(d) { return d.date; })));
+    y.domain([d3.min(data.map(function(d) { return d.temp; })), d3.max(data.map(function(d) { return d.temp; }))]);
+    x2.domain(x.domain());
+    y2.domain(y.domain());
+   
+    focus.append("path")
+        .datum(data)
+        .attr("clip-path", "url(#clip)")
+        .attr("d", line);
+   
+    focus.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis);
+   
+    focus.append("g")
+        .attr("class", "y axis")
+        .call(yAxis)
+        .append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y",-margin.top*4)
+        .attr("x",-height/2)
+        .attr("dy", ".71em")
+        .style("text-anchor", "middle")
+        .text("Temperature (ºC)");
+   
+    /*focus.append("path")
+        .datum(data)
+        .attr("d", line2);*/
+   
+    /*focus.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height2 + ")")
+        .call(xAxis2);*/
+   
+    focus.append("g")
+        .attr("class", "x brush")
+        .call(brush)
+      .selectAll("rect")
+        .attr("y", -6)
+        .attr("height", height + 7);
+  });
+   
+  function brush() {
+    x.domain(brush.empty() ? x2.domain() : brush.extent());
+    d3.select(".extent")
+      .transition()
+      .delay(500)
+      .attr("width", 0)
+      .attr('x', 0)
+      .style('display','none');
+    d3.selectAll('.resize')
+      .transition()
+      .delay(500)
+      .attr('transform','translate(0,0)')
+      .style('display','none');
+
+    zoom();
+  }
+
+  function zoom(){
+    focus.select("path")
+      .transition()
+      .duration(500)
+      .delay(500)
+      .attr("d", line);
+    focus.select(".x.axis").call(xAxis);
+  }
+
+
+</script>
+</body>
+</html>

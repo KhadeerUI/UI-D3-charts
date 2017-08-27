@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<title>D3 JS</title>
+		<style>
+
+		body {
+			font: 12px/1.4 arial;
+			background: rgba(0,0,0,.1);
+			text-align: center;
+			color: #333;
+		}
+		.axis path,
+		.axis line {
+		  fill: none;
+		  stroke: rgba(0,0,0,.2);
+		  shape-rendering: crispEdges;
+		}
+		.line {
+		  fill: none;
+		  stroke: #05c;
+		  stroke-width: 2px;
+		  shape-rendering: crispEdges;
+		}
+		.y.axis .tick:first-child line {
+			stroke-opacity: 0;
+		}
+		.CircleG circle {
+			fill: #fff;
+			stroke: #05c;
+		}
+		text {
+			fill: #555;
+		}
+		div.tooltip {	
+		    position: absolute;			
+		    text-align: center;			
+		    padding: 10px 1em;			
+		    background: rgba(0,0,0,.8);
+		    color: #eee;
+		    box-shadow: 0 1px 5px rgba(0,0,0,.3);
+		    border: 0px;		
+		    border-radius: 3px;			
+		    pointer-events: none;
+		    font-size: 12px;		
+		}
+		div.tooltip:after {
+			content: '';
+		    position: absolute;
+		    top: 100%;
+		    left: 50%;
+		    margin-left: -6px;
+		    border: 6px solid transparent;
+		    border-top-color: rgba(0,0,0,.8);
+		}
+		div.tooltip.top:after {
+		    border-top-color: transparent;
+			left: 100%;
+			top: 50%;
+			margin-left: 0;
+			margin-top: -6px;
+			border-left-color: rgba(0,0,0,.8);
+		}
+		div.tooltip .Text {
+			display: block;
+		}
+		.ChartBox {
+			display: inline-block;
+			background: #fff;
+			box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+			padding: 1em;
+			border-radius: 3px;
+			position: relative;
+		}
+		.Grid line {
+			stroke: #f2f2f2;
+			stroke-width: 1px;
+		}
+		.Cont {
+			display: block;
+			background: #fff;
+			padding: 1em;
+			font-size: 15px;
+			text-align: left;
+			margin: 1em;
+		}
+		.GridLines line {
+			stroke: rgba(0,0,0,.05);
+		}
+		.GridLines line:first-child {
+			stroke-opacity: 0;
+		}
+		.Legends ul {
+		  margin: 0;
+		  padding: 0;
+		  list-style-type: none;
+		}
+		.Legends ul li {
+		  padding: 1em 1em .2em;
+		  line-height: 1.2;
+		  display: inline-block;
+		}
+		.Legends li > :first-child, .Legends li > :last-child {
+		  display: inline-block;
+		  vertical-align: middle;
+		  margin-right: 5px;
+		}
+		.Legends li > :last-child {
+		  margin-right: 0;
+		  color: #555;
+		}
+		.Legends.Right {
+		  width: 150px;
+		  vertical-align: top;
+		  display: inline-block;
+		}
+		.Legends.Right ul {
+		  margin-top: 0;
+		}
+		.Legends.Right ul li {
+		  text-align: left;
+		  padding: 10px 0;
+		  display: block;
+		}
+		.Legends.Right li > :first-child {
+		  margin-right: 0;
+		  width: 35px;
+		}
+		.Legends.Right li > :last-child {
+		  width: calc(100% - 35px)
+		}
+		.Legends li line {
+		  stroke-width: 2.5px;
+		}
+
+		</style>
+	</head>
+	<body>
+
+	<!-- <button class="start">Animation</button>
+	<button class="reset">Reset</button> -->
+
+		<div class="ChartBox"></div>
+		<div class="Cont">
+			<h2>List of Changes</h2>
+			<ol>
+				<li>Line chart style changed to step style</li>
+				<li>Added Y axis grid lines in the chart background</li>
+				<li>Line animation move start to end</li>
+				<li>Customize tooltip</li>
+				<li>Tooltip Position</li>
+				<li>Added x and y axis label</li>
+				<li>Added Legend</li>
+			</ol>
+		</div>
+
+		<!-- <script src="js/d3.js"></script> -->
+		<script src="../js/jquery.js"></script>
+		<script src="../js/d3.v3.min.js"></script>
+		
+		<script>
+
+			var margin = {top: 20, right: 20, bottom: 50, left: 60},
+			    width = 700 - margin.left - margin.right,
+			    height = 365 - margin.top - margin.bottom;
+
+			// Adjust parsing of data to properly show tooltip
+			var parseDate = d3.time.format("%b %Y").parse,
+			    bisectDate = d3.bisector(function(d) { return d.date; }).right,
+			    formatValue = d3.format(",.1f"),
+			    formatCurrency = function(d) { return formatValue(d) + "%"; };
+
+			var color = '#05c';
+
+			var x = d3.time.scale()
+			    .range([0, width]);
+
+			var y = d3.scale.linear()
+			    .range([height, 0]);
+
+			var xAxis = d3.svg.axis()
+			    .scale(x)
+			    .orient("bottom");
+
+			var yAxis = d3.svg.axis()
+			    .scale(y)
+			    .orient("left")
+			    .ticks(5)
+
+			var line = d3.svg.line()
+				.interpolate('step')
+			    .x(function(d) { return x(d.date); })
+			    .y(function(d) { return y(d.rate); });
+
+			var svg = d3.select(".ChartBox").append("svg")
+			    .attr("width", width + margin.left + margin.right)
+			    .attr("height", height + margin.top + margin.bottom)
+			  	.append("g")
+			    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+			    
+
+			d3.csv("data3.csv", function(error, data) {
+			  if (error) throw error;
+
+			  data.forEach(function(d) {
+			    d.date = parseDate(d.date);
+			    d.rate = +d.rate;
+			  });
+
+			  x.domain(d3.extent(data, function(d) { return d.date; }));
+			  y.domain(d3.extent(data, function(d) { return d.rate; }));
+
+			  svg.append("g")
+			      .attr("class", "x axis")
+			      .attr("transform", "translate(0," + height + ")")
+			      .call(xAxis);
+			  svg.append("g")
+			      .attr("class", "y axis")
+			      .call(yAxis);
+
+			  svg.append('g')
+			  	.attr('class','GridLines')
+			  	.selectAll('.Line')
+			  	.data(y.ticks(5))
+			  	.enter().append('line')
+			  	.attr('class','Line')
+			  	.attr('x1',0)
+			  	.attr('x2',width)
+			  	.attr('y1',y)
+			  	.attr('y2',y);
+
+			  svg.append('g')
+			  	.attr('class','xLabel');
+			  svg.append('g')
+			  	.attr('class','yLabel');
+
+			  svg.select('.xLabel')
+		    	.attr('transform','translate('+ width +','+ (height+margin.bottom-5) +')')
+		    	.append("text")
+		      	.style("text-anchor", "end")
+		      	.text("Date: year");
+
+			  svg.select('.yLabel')
+			  	.attr('transform','translate('+ (-margin.left+20) +','+ 0 +')')
+			  	.append("text")
+			    .attr("transform", "rotate(-90)")
+			    .style("text-anchor", "end")
+			    .text("Unemployment Rate (%)");
+
+			  // Start Animation 
+			    var path = svg.append("path")
+			        .datum(data)
+			        .attr("class", "line")
+			        .attr("d", line);
+
+			    // Variable to Hold Total Length
+			    var totalLength = path.node().getTotalLength();
+
+			    // Set Properties of Dash Array and Dash Offset and initiate Transition
+			    path
+			      .attr("stroke-dasharray", totalLength + " " + totalLength)
+			      .attr("stroke-dashoffset", totalLength)
+			     .transition() // Call Transition Method
+			      .duration(2000) // Set Duration timing (ms)
+			      .ease("linear") // Set Easing option
+			      .attr("stroke-dashoffset", 0) // Set final value of dash-offset for transition
+			      .style('display','block');
+
+
+			    var focus = svg.append('g')
+			    	.attr('class','focus')
+			    	.style('display','none');
+
+			    focus.append('circle')
+			    	.attr('r',4)
+			    	.attr('fill','#fff')
+			    	.attr('stroke','#05c')
+			    	.attr('stroke-width','2px');
+
+			   	var toolTip = d3.select('.ChartBox')
+			   		.append('div')
+			   		.attr('class','tooltip')
+			   		.style('opacity','0')
+			   		.style('display','none');
+
+			    svg.append('rect')
+			    	.attr('class','Overlay')
+			    	.attr('width',width)
+			    	.attr('height',height)
+			    	.attr('fill','none')
+			    	.style('pointer-events','all')
+			    	.on('mouseover',function(){
+			    		focus.style('display',null)
+			    		toolTip.transition()
+			    			.duration(500)
+			    			.style('display',null)
+			    			.style('opacity','1')
+
+			    	})
+			    	.on('mouseout',function(){
+			    		focus.style('display','none')
+			    		toolTip.style('display','none')
+			    			.style('opacity','0')
+			    	})
+			    	.on('mousemove',mousemove);
+
+			    function mousemove(){
+			    	var x0 = x.invert(d3.mouse(this)[0]),
+			    		i = bisectDate(data, x0, 1),
+			    		d0 = data[i - 1],
+			    		d1 = data[i];
+						d = x0 - d0.date - x0 ? d1:d0;
+
+			    	focus.attr('transform', 'translate('+ x(d.date) + ',' + y(d.rate) +')');
+			    	toolTip.html(formatCurrency(d.rate));
+
+			    	var tW = $('.tooltip').innerWidth(),
+			    		tH = $('.tooltip').innerHeight(),
+			    		fW = parseInt(d3.select('.focus circle').attr('r'))*2;
+
+			    	toolTip.style('left', ((x(d.date)) + (tW/2)) + 'px')
+			    		.style('top', (y(d.rate)-18) + 'px')
+			    	$('.tooltip').removeClass('top');
+
+			    	if(y(d.rate) <= tH){
+			    		$('.tooltip').addClass('top');
+			    		toolTip.style('left', (x(d.date) - 20) + 'px')
+			    			.style('top', ((y(d.rate)-(fW/2)) + (tH/2)) + 'px')
+			    	}
+			    }
+
+
+			    /*============= Legends ==============*/
+		        var legends = d3.select('.ChartBox').append('div')
+		          .attr('class','Legends') // ====== if legends right side add class name 'Right'
+		          //.classed('Right',true)
+		          .append('ul');
+		        var legend = legends.selectAll('.Legend')
+		          .data([1])
+		          .enter().append('li')
+		          .attr('class','Legend');
+		        legend.append('svg')
+		          .attr('width', 25)
+		          .attr('height', 10)
+		          .append('line')
+		          .attr('x1', 0)
+		          .attr('x2', 25)
+		          .attr('y1', 5)
+		          .attr('y2', 5)
+		          .attr('stroke',color)
+		        legend.append('span')
+		          .text('Unemployment');
+		        /* ========== End Legends ========= */
+
+			});
+
+			</script>
+	</body>
+</html>

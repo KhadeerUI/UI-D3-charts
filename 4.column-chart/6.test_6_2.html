@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>D3 JS</title>
+		<link href="../css/style.css" rel="stylesheet">
+		<style>
+			body {
+				text-align: center;
+			}
+			.Col {
+				display: inline-block;
+				width: 70%;
+				padding: 1em;
+				font-size: 12px;
+			}
+			.ChartBox {
+				box-shadow: 0 2px 3px rgba(0,0,0,.1);
+				background: #fff;
+				padding: 1em;
+				border-radius: 3px;
+				position: relative;
+			}
+			.ChartBox svg {
+				width: 100%;
+				height: 100%;
+			}
+			.Axis path, .Axis line  {
+				fill: none;
+				stroke: rgba(0,0,0,.2);
+				shape-rendering: crispEdges;
+			}
+			.y.Axis .tick:first-child line {
+				stroke-opacity: 0;
+			}
+			.Tooltip {
+				opacity: 0;
+				display: inline-block;
+				background: rgba(0,0,0,.8);
+				color: #eee;
+				padding: 10px 1em;
+				border-radius: 3px;
+				position: absolute;
+				white-space: nowrap;
+				box-shadow: 0 1px 5px rgba(0,0,0,0.3);
+				white-space: nowrap;
+			}
+			.Tooltip:after {
+				content: '';
+				position: absolute;
+				left: 50%;
+				top: 100%;
+				border: 5px solid transparent;
+				border-top-color: rgba(0,0,0,.8);
+				margin-left: -5px;
+			}
+			.Tooltip.right:after {
+				left: 100%;
+				top: 50%;
+				margin-top: -5px;
+				margin-left: auto;
+				border-top-color: transparent;
+				border-left-color: rgba(0,0,0,.89);
+			}
+			.Grid .tick {
+				stroke: #f2f2f2;
+			}
+			.Cont {
+				display: block;
+				background: #fff;
+				padding: 1em;
+				font-size: 15px;
+				text-align: left;
+				margin: 1em;
+			}
+			.GridLines line {
+				stroke: rgba(0,0,0,.05);
+			}
+			.GridLines line:first-child {
+				stroke-opacity: 0;
+			}
+			.Legends ul {
+				list-style-type: none;
+				margin: 0;
+				padding: 0;
+				margin-top: 10px;
+			}
+			.Legends.Right {
+				vertical-align: top;
+				display: inline-block;
+			}
+			.Legends.Right ul {
+				margin-top: 0;
+			}
+			@media (max-width: 767px){
+				.Col {
+					display: block;
+					width: 100%;
+				}
+			}
+		</style>
+	</head>
+	<body>
+
+		<div class="Col">
+			<div class="ChartBox"></div>
+		</div>
+		<div class="Cont">
+			<h2>List of Changes</h2>
+			<ol>
+				<li>Added Y axis grid lines in the chart background</li>
+				<li>Rectangle animation</li>
+				<li>Tooltip positions</li>
+				<li>Added x and y axis labels</li>
+				<li>Add Legends bottom</li>
+			</ol>
+		</div>
+
+		<script src="../js/jquery.js"></script>
+		<script src="../js/d3.v3.min.js"></script>
+		<script>
+
+			var vData = [
+						  {'name': 'A','value': 300},
+						  {'name': 'B','value': 150},
+						  {'name': 'C','value': 300},
+						  {'name': 'D','value': 550},
+						  {'name': 'E','value': 700},
+						  {'name': 'F','value': 600},
+						  {'name': 'G','value': 800},
+						  {'name': 'H','value': 600},
+						  {'name': 'I','value': 300},
+						  {'name': 'J','value': 350},
+						  {'name': 'K','value': 400},
+						  {'name': 'L','value': 600},
+						  {'name': 'M','value': 1000},
+						  {'name': 'N','value': 800},
+						  {'name': 'O','value': 700},
+						  {'name': 'P','value': 600},
+						  {'name': 'Q','value': 800},
+						  {'name': 'R','value': 300},
+						  {'name': 'S','value': 200},
+						  {'name': 'T','value': 100},
+						  {'name': 'U','value': 500},
+						  {'name': 'V','value': 600},
+						  {'name': 'W','value': 800},
+						  {'name': 'X','value': 900},
+						  {'name': 'Z','value': 1000}
+						];
+			
+			var vMargin = {top: 20, right: 20, bottom: 50, left: 70},
+				vWidth = parseInt(d3.select('.ChartBox').style('width')) - vMargin.left - vMargin.right,
+				vHeight = 400 - vMargin.top - vMargin.bottom;
+
+			var x = d3.scale.ordinal()
+				.domain(vData.map(function(d){ return d.name }))
+				.rangeRoundBands([0,vWidth],.1);
+
+			var y = d3.scale.linear()
+				.domain([0,d3.max(vData,function(d){ return d.value })])
+				.range([vHeight,0]);
+
+			var color = '#05c';
+
+			var xAxis = d3.svg.axis()
+				.scale(x)
+				.orient('bottom');
+
+			var yAxis = d3.svg.axis()
+				.scale(y)
+				.orient('left')
+				.ticks(0);
+
+			var vSvg = d3.select('.ChartBox').append('svg')
+				.attr('width', vWidth + vMargin.left + vMargin.right)
+				.attr('height', vHeight + vMargin.top + vMargin.bottom)
+				.append('g')
+				.attr('transform','translate('+ vMargin.left +','+ vMargin.top +')');
+
+			vSvg.append('g')
+				.attr('class','x Axis')
+				.attr('transform','translate(0,'+ vHeight +')')
+				.call(xAxis);
+
+			vSvg.append('g')
+				.attr('class','y Axis')
+				.call(yAxis);
+
+			vSvg.append('g')
+			  	.attr('class','GridLines')
+			  	.selectAll('.Line')
+			  	.data(y.ticks(10))
+			  	.enter().append('line')
+			  	.attr('class','Line')
+			  	.attr('x1',0)
+			  	.attr('x2',vWidth)
+			  	.attr('y1',y)
+			  	.attr('y2',y);
+
+			vSvg.append('g').attr('class','xLabel');
+			vSvg.append('g').attr('class','yLabel');
+
+			vSvg.select('.xLabel')
+				.attr('transform','translate('+ vWidth +','+ (vHeight+vMargin.bottom-5) +')')
+				.append('text')
+				.text('Frequncy Names')
+				.attr('text-anchor','end')
+
+			vSvg.select('.yLabel')
+				.attr('transform','translate('+ (-vMargin.left+20) +',0)')
+				.append('text')
+				.text('Frequency Values')
+				.style('text-anchor','end')
+				.attr('transform','rotate(-90)')
+
+			/*============= Legends ==============*/
+			var legendSvgW = 150,
+				legendSvgH = 20;
+			var legends = d3.select('.ChartBox').append('div')
+				.attr('class','Legends') // ====== if legends right side add class name 'Right'
+				.append('ul')
+			d3.select('.Legends.Right')
+			    	.style('width',legendSvgW + 'px');
+			var legend = legends.selectAll('.Legend')
+				.data([1])
+				.enter().append('li')
+				.attr('class','Legend')
+				.style('line-height','1')
+				.append('svg')
+				.style('width',legendSvgW)
+				.style('height',legendSvgH);
+			legend.append('line')
+				.attr('x1', 0)
+				.attr('x2', 25)
+				.attr('y1', legendSvgH/2)
+				.attr('y2', legendSvgH/2)
+				.attr('stroke',color)
+				.attr('stroke-width','2.5px');
+			legend.append('text')
+				.attr('x',30)
+				.attr('y',legendSvgH/1.5)
+				.text('Frequency');
+			/* ========== End Legends ========= */
+
+			var vBar = vSvg.append('g')
+				.attr('class','Barg');
+
+			vBar.selectAll('rect')
+				.data(vData)
+				.enter().append('rect')
+				.attr('fill',color)
+				.style('shape-rendering','crispEdges')
+				.attr('y',vHeight)
+				.attr('height', 0)
+				.transition()
+				.duration(1000)
+				.ease('elastic')
+				.delay(function(d,i){ return i*50 })
+				.attr('width', x.rangeBand())
+				.attr('height', function(d){ return vHeight - y(d.value) })
+				.attr('x',function(d){ return x(d.name) })
+				.attr('y',function(d){ return y(d.value) })
+
+			vBar.selectAll('rect')
+				.on('mouseover',function(d,i){
+					
+					var vTooltip = d3.select('.ChartBox').append('div')
+						.attr('class','Tooltip')
+						.style('opacity',0);
+
+					vTooltip.transition()
+						.duration(500)
+						.style('opacity',1);
+
+					vTooltip.html( (i+1) + ' Value: '+ d.value);
+
+					var vTtW = $('.Tooltip').innerWidth(),
+						vTtH = $('.Tooltip').innerHeight(),
+						vBarW = d3.select(this).attr('width'),
+						vBarH = d3.select(this).attr('height'),
+						vBarOfL = $(this).offset().left,
+						vBarOfT = $(this).offset().top,
+						vChartBoxOfL = $('.ChartBox').offset().left,
+						vChartBoxOfT = $('.ChartBox').offset().top;
+
+						console.log(vBarH)
+
+					vTooltip.style('left', (vBarOfL - vChartBoxOfL) - ((vTtW - vBarW)/2) +'px')
+						.style('top', (vBarOfT - vChartBoxOfT) - (vTtH+10) +'px');
+
+					if((vBarOfT - vChartBoxOfT) <= (vTtH+10)){
+						vTooltip.style('top', (vBarOfT - vChartBoxOfT) +'px')
+					}
+
+				})
+				.on('mouseout',function(d){
+					d3.select('.Tooltip').remove();
+				})
+
+				d3.select(window).on('resize',resize);
+
+				resize();
+
+				function resize(){
+
+					var vWidth = parseInt(d3.select('svg').style('width')) - vMargin.left - vMargin.right,
+						vHeight = parseInt(d3.select('svg').style('height')) - vMargin.top - vMargin.bottom;
+
+					var x = d3.scale.ordinal()
+						.domain(vData.map(function(d){ return d.name }))
+						.rangeRoundBands([0,vWidth],.1);
+
+					var y = d3.scale.linear()
+						.domain([0,d3.max(vData,function(d){ return d.value })])
+						.range([vHeight,0]);
+
+					var xAxis = d3.svg.axis()
+						.scale(x)
+						.orient('bottom')
+						.ticks(vHeight/50)						
+
+					var yAxis = d3.svg.axis()
+						.scale(y)
+						.orient('left')
+						.ticks(vWidth/100)
+
+					vSvg.select('.x.Axis')
+						.attr('transform','translate(0,'+ vHeight +')')
+						.call(xAxis);
+
+					vSvg.select('.y.Axis')
+						.call(yAxis);
+
+					vSvg.selectAll('.GridLines .Line')
+						.attr('x2',vWidth)
+						.attr('y1',y)
+						.attr('y2',y);
+
+					vSvg.select('.xLabel')
+						.attr('transform','translate('+ vWidth +','+ (vHeight+vMargin.bottom-5) +')')
+
+					vSvg.select('.yLabel')
+						.attr('transform','translate('+ (-vMargin.left+20) +',0)')
+
+					vBar.selectAll('rect')
+						.attr('height', 0)
+						.attr('y',vHeight)
+						.transition()
+						.duration(1000)
+						.ease('elastic')
+						.delay(function(d,i){ return i*50 })
+						.attr('width', x.rangeBand())
+						.attr('height', function(d){ return vHeight - y(d.value) })
+						.attr('x',function(d){ return x(d.name) })
+						.attr('y',function(d){ return y(d.value) })
+						.attr('fill','#05c')
+
+				}
+				
+
+		</script>
+	</body>
+</html>

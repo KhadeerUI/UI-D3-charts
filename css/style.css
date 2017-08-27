@@ -1,0 +1,168 @@
+@charset "UTF-8";
+*,*:before,*:after{
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+}
+body {
+	background: rgba(0,0,0,.1);
+	font-size: 0;
+	line-height: 1.4;
+	font-family: arial;
+	color: #333;
+}
+text {
+	fill: #555;
+}
+.Col {
+	display: inline-block;
+	width: 50%;
+	padding: 1em;
+	font-size: 14px;
+	vertical-align: middle;
+}
+.ChartBox {
+	box-shadow: 0 2px 3px rgba(0,0,0,.1);
+	background: #fff;
+	padding: 1em;
+	border-radius: 3px;
+	position: relative;
+}
+.ChartBox svg {
+	width: 100%;
+	height: 100%;
+}
+.Row {
+	margin-bottom: 1em;
+}
+h1,h2,h3,p {
+	margin-bottom: .83em;
+}
+h1:last-child,h2:last-child,h3:last-child,p:last-child {
+	margin-bottom: 0;
+}
+ol {
+	padding-left: 40px;
+}
+.Index ol li {
+	padding: 6px;
+	border-bottom: 1px solid #f2f2f2;
+}
+.Index ol li .Item {
+	display: inline-block;
+	width: calc(95% - 100px);
+}
+.Index ol li .Item:nth-child(2) {
+	width: 100px;
+	font-size: 12px;
+	text-align: right;
+}
+.Index ol li a {
+	color: #05c;
+	text-decoration: none;
+	position: relative;
+}
+.Index ol li a:after {
+	content: '';
+	position: absolute;
+	width: 8px;
+	height: 8px;
+	border: 2px solid #000;
+	top: 50%;
+	margin-top: -4px;
+	margin-left: -5px;
+	border-radius: 3px;
+	transform: rotate(-45deg);
+	-webkit-transform: rotate(-45deg);
+	-moz-transform: rotate(-45deg);
+	border-left-color: transparent;
+	border-top-color: transparent;
+	opacity: 0;
+	transition: margin-left ease .2s;
+	-webkit-transition: margin-left ease .2s;
+	-ms-transition: margin-left ease .2s;
+}
+.Index ol li a:hover:after {
+	opacity: 1;
+	margin-left: 5px;
+}
+.Index ol li:last-child a {
+	border-bottom: 0;
+}
+a:hover {
+	color: #000!important;
+}
+.Index h2 {
+	margin-bottom: 0
+}
+.Legends ul {
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+}
+.Legends ul li {
+  padding: 1em 1em .2em;
+  line-height: 1.2;
+  display: inline-block;
+}
+.Legends li > :first-child, .Legends li > :last-child {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 5px;
+}
+.Legends li > :last-child {
+  margin-right: 0;
+  color: #555;
+}
+.Legends.Right {
+  width: 150px;
+  vertical-align: top;
+  display: inline-block;
+}
+.Legends.Right ul {
+  margin-top: 0;
+}
+.Legends.Right ul li {
+  text-align: left;
+  padding: 10px 0;
+  display: block;
+}
+.Legends.Right li > :first-child {
+  margin-right: 0;
+  width: 35px;
+}
+.Legends.Right li > :last-child {
+  width: calc(100% - 35px)
+}
+.Legends li line {
+  stroke-width: 2.5px;
+}
+.Resp {
+	margin-left: 30px;
+	position: relative;
+	font-size: 12px;
+}
+.Resp:before {
+	content: '';
+	position: absolute;
+	left: -10px;
+	top: 0;
+	height: 100%;
+	border-left: 1px dotted #999;
+	color: #000;
+}
+.Red {
+	color: #f00;
+}
+
+
+
+
+@media (max-width: 767px){
+	.Col {
+		display: block;
+		width: 100%;
+	}
+}

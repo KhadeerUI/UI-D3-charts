@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+	background: rgba(0,0,0,.1);
+	font: 12px/1.4 arial;
+	text-align: center;
+	list-style-position: inside;
+	color: #333;
+}
+.ChartBox {
+	padding: 1em;
+	display: inline-block;
+	background: #fff;
+	box-shadow: 0 2px 3px rgba(0,0,0,.1);
+	border-radius: 3px;
+	position: relative;
+}
+.axis path, .axis line {
+	fill: none;
+	stroke: rgba(0,0,0,.2);
+	shape-rendering: crispEdges;
+}
+.GridLines line {
+	stroke: rgba(0,0,0,.05);
+}
+.d3-tip {
+	line-height: 1;
+	padding: 10px 15px;
+	background: rgba(0, 0, 0, 0.8);
+	color: #eee;
+	border-radius: 3px;
+	box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+.d3-tip:after {
+	content: '';
+	position: absolute;
+	left: 50%;
+	top: 100%;
+	border: 6px solid transparent;
+	border-top-color: rgba(0,0,0,.8);
+	margin-left: -6px;
+}
+.Cont {
+    display: block;
+    background: #fff;
+    padding: 1em;
+    font-size: 15px;
+    text-align: left;
+    margin: 1em;
+}
+  
+
+
+
+
+
+</style>
+</head>
+<body>
+
+<div class="ChartBox">
+	<!-- <svg width="960" height="880"></svg> -->
+</div>
+
+<script src="../../js/jquery.js"></script>
+<script src="../../js/d3.v3.min.js"></script>
+<script>
+
+	/*var svg = d3.select("svg"),
+	    width = +svg.attr("width");*/
+
+	var margin = { top: 20, right: 20, bottom: 20, left: 20 },
+		width = 800,
+		height = 400;
+
+	var diameter = 960,
+	    format = d3.format(",d"),
+	    color = d3.scale.category20c();
+
+	var bubble = d3.layout.pack()
+	    .sort(null)
+	    .size([diameter, diameter])
+	    .padding(1.5);
+
+	var svg = d3.select(".ChartBox").append("svg")
+	    .attr("width", diameter)
+	    .attr("height", diameter)
+	    .attr("class", "bubble");
+	    
+	var tooltip = d3.select("body")
+	    .append("div")
+	    .style("position", "absolute")
+	    .style("z-index", "10")
+	    .style("visibility", "hidden")
+	    .style("color", "white")
+	    .style("padding", "8px")
+	    .style("background-color", "rgba(0, 0, 0, 0.75)")
+	    .style("border-radius", "6px")
+	    .style("font", "12px sans-serif")
+	    .text("tooltip");
+
+	d3.json("flare.json", function(error, root) {
+	  var node = svg.selectAll(".node")
+	      .data(bubble.nodes(classes(root))
+	      .filter(function(d) { return !d.children; }))
+	    .enter().append("g")
+	      .attr("class", "node")
+	      .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+
+	  node.append("circle")
+	      .attr("r", function(d) { return d.r; })
+	      .style("fill", function(d) { return color(d.packageName); })
+	      .on("mouseover", function(d) {
+	              tooltip.text(d.className + ": " + format(d.value));
+	              tooltip.style("visibility", "visible");
+	      })
+	      .on("mousemove", function() {
+	          return tooltip.style("top", (d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");
+	      })
+	      .on("mouseout", function(){return tooltip.style("visibility", "hidden");});
+
+	  node.append("text")
+	      .attr("dy", ".3em")
+	      .style("text-anchor", "middle")
+	      .style("pointer-events", "none")
+	      .text(function(d) { return d.className.substring(0, d.r / 3); });
+	});
+
+	// Returns a flattened hierarchy containing all leaf nodes under the root.
+	function classes(root) {
+	  var classes = [];
+
+	  function recurse(name, node) {
+	    if (node.children) node.children.forEach(function(child) { recurse(node.name, child); });
+	    else classes.push({packageName: name, className: node.name, value: node.size});
+	  }
+
+	  recurse(null, root);
+	  return {children: classes};
+	}
+
+	d3.select(self.frameElement).style("height", diameter + "px");
+
+</script>
+</body>
+</html>

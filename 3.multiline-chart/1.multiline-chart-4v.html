@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<title>D3 JS</title>
+		<style>
+			body {
+				font: 12px/1.4 arial;
+				background: rgba(0,0,0,.1);
+				text-align: center;
+				color: #333;
+			}
+			text {
+				fill: #555;
+			}
+			.axis path,
+			.axis line {
+			  fill: none;
+			  stroke: rgba(0,0,0,.2);
+			  shape-rendering: crispEdges;
+			}
+
+			.line {
+			  fill: none;
+			  stroke: steelblue;
+			  stroke-width: 2.5px;
+			}
+			.ChartBox {
+				padding: 1em;
+				display: inline-block;
+				background: #fff;
+				border-radius: 3px;
+				box-shadow: 0 2px 3px rgba(0,0,0,.1);
+			}
+			.Grid line {
+				stroke: #f2f2f2;
+				stroke-width: 1px;
+				shape-rendering: crispEdges; 
+			}
+			.Cont {
+				display: block;
+				background: #fff;
+				padding: 1em;
+				font-size: 15px;
+				text-align: left;
+				margin: 1em;
+			}
+			.Shadow {
+				stroke: #fff;
+				stroke-width: 5px;
+			}
+			.GridLines line {
+				stroke: rgba(0,0,0,.05);
+			}
+			.GridLines line:first-child {
+				stroke-opacity: 0;
+			}
+			.Legends ul {
+			  margin: 0;
+			  padding: 0;
+			  list-style-type: none;
+			}
+			.Legends ul li {
+			  padding: 1em 1em .2em;
+			  line-height: 1.2;
+			  display: inline-block;
+			}
+			.Legends li > :first-child, .Legends li > :last-child {
+			  display: inline-block;
+			  vertical-align: middle;
+			  margin-right: 5px;
+			}
+			.Legends li > :last-child {
+			  margin-right: 0;
+			  color: #555;
+			}
+			.Legends.Right {
+			  width: 150px;
+			  vertical-align: top;
+			  display: inline-block;
+			}
+			.Legends.Right ul {
+			  margin-top: 0;
+			}
+			.Legends.Right ul li {
+			  text-align: left;
+			  padding: 10px 0;
+			  display: block;
+			}
+			.Legends.Right li > :first-child {
+			  margin-right: 0;
+			  width: 35px;
+			}
+			.Legends.Right li > :last-child {
+			  width: calc(100% - 35px)
+			}
+			.Legends li line {
+			  stroke-width: 2.5px;
+			}
+
+		</style>
+	</head>
+	<body>
+
+	<button class="refresh">Refresh</button>
+		
+		<div class="ChartBox"></div>
+		<div class="Cont">
+			<h2>List of Changes</h2>
+			<ol>
+				<li>Line chart style changed to basis style</li>
+				<li>Added Y axis grid lines in the chart background</li>
+				<li>Line animation completed then show city names</li>
+				<li>And also added refresh functionality</li>
+				<li>Added x and y axis labels</li>
+				<li>Add Legends bottom</li>
+			</ol>
+		</div>
+
+		<!-- <script src="js/d3.js"></script> -->
+		<script src="../js/d3.v3.min.js"></script>
+		<script>
+
+			var margin = {top: 20, right: 20, bottom: 50, left: 60},
+			    width = 960 - margin.left - margin.right,
+			    height = 500 - margin.top - margin.bottom;
+
+			var parseDate = d3.time.format("%Y%m%d").parse;
+
+			var x = d3.time.scale()
+			    .range([0, width]);
+
+			var y = d3.scale.linear()
+			    .range([height, 0]);
+
+			/*var color = d3.scale.ordinal()
+			      .domain(["New York", "San Francisco", "Austin"])
+			      .range(["#FF0000", "#009933" , "#0000FF"]);*/
+
+			//var color = d3.scale.category10();
+
+			var color = d3.scale.ordinal()
+				.range(['#ddd','#d3553d','#05c']);
+
+			var xAxis = d3.svg.axis()
+			    .scale(x)
+			    .orient("bottom");
+
+			var yAxis = d3.svg.axis()
+			    .scale(y)
+			    .orient("left")
+			    .ticks(10);
+
+			var line = d3.svg.line()
+			    .interpolate("basis")
+			    .x(function(d) { return x(d.date); })
+			    .y(function(d) { return y(d.temperature); });
+
+			var svg = d3.select(".ChartBox").append("svg")
+			    .attr("width", width + margin.left + margin.right)
+			    .attr("height", height + margin.top + margin.bottom)
+			  .append("g")
+			    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+			d3.tsv("data5.tsv", function(error, data) {
+			  color.domain(d3.keys(data[0]).filter(function(key) { return key !== "date"; }));
+
+			  data.forEach(function(d) {
+			    d.date = parseDate(d.date);
+			  });
+
+			  var cities = color.domain().map(function(name) {
+			    return {
+			      name: name,
+			      values: data.map(function(d) {
+			        return {date: d.date, temperature: +d[name]};
+			      })
+			    };
+			  });
+
+			  x.domain(d3.extent(data, function(d) { return d.date; }));
+
+			  y.domain([
+			    d3.min(cities, function(c) { return d3.min(c.values, function(v) { return v.temperature; }); }),
+			    d3.max(cities, function(c) { return d3.max(c.values, function(v) { return v.temperature; }); })
+			  ]);
+
+			  svg.append("g")
+			      .attr("class", "x axis")
+			      .attr("transform", "translate(0," + height + ")")
+			      .call(xAxis);
+			  
+			  svg.append("g")
+			      .attr("class", "y axis")
+			      .call(yAxis);
+
+			  svg.append('g')
+			  	.attr('class','GridLines')
+			  	.selectAll('.Line')
+			  	.data(y.ticks(10))
+			  	.enter().append('line')
+			  	.attr('class','Line')
+			  	.attr('x1',0)
+			  	.attr('x2',width)
+			  	.attr('y1',y)
+			  	.attr('y2',y);	  
+
+		  	var city = svg.selectAll(".city")
+			  	.data(cities)
+			    .enter().append("g")
+			    .attr("class", "city");
+
+		  	var path = city.append("path")
+			    .attr("class", "line")
+			    .attr("d", function(d) { return line(d.values); })
+			    .style("stroke", function(d) { return color(d.name); });
+
+			var totalLength = path.node().getTotalLength();
+
+			path.attr('stroke-dasharray', totalLength)
+					.attr('stroke-dashoffset', totalLength)
+					.transition()
+					.duration(1000)
+					.attr('stroke-dashoffset', 0)
+					.style('opacity',1);
+
+			svg.append('g')
+			  	.attr('class','yLabel')
+			svg.append('g')
+			  	.attr('class','xLabel')
+
+			  svg.select('.yLabel')
+			  	.attr('transform','translate('+ (-margin.left+20) +','+ 0 +')')
+			    .append("text")
+			    .attr("transform", "rotate(-90)")
+			    .style("text-anchor", "end")
+			    .text("Temperature (ºF)");
+
+			  svg.select('.xLabel')
+			  	.attr('transform','translate('+ width +','+ (height+margin.bottom-5) +')')
+			  	.append('text')
+			  	.attr('text-anchor','end')
+			  	.text('Date')
+
+			d3.select('.refresh').on('click',function(){
+
+				d3.selectAll('.line').remove();
+
+				var path = city.append("path")
+				    .attr("class", "line")
+				    .attr("d", function(d) { return line(d.values); })
+				    .style("stroke", function(d) { return color(d.name); });
+
+				path.attr('stroke-dasharray', totalLength)
+					.attr('stroke-dashoffset', totalLength)
+					.transition()
+					.duration(1000)
+					.attr('stroke-dashoffset', 0)
+					.style('opacity',1)
+			})			
+			  
+		  	/*city.append("text")
+			      .datum(function(d) { return {name: d.name, value: d.values[d.values.length - 1]}; })
+			      .attr("transform", function(d) { return "translate(" + x(d.value.date) + "," + y(d.value.temperature) + ")"; })
+			      .transition()
+			      .delay(1000)
+			      .attr("x", 3)
+			      .attr("dy", ".35em")
+			      .text(function(d) { return d.name; });*/
+
+
+			/*============= Legends ==============*/
+	        var legends = d3.select('.ChartBox').append('div')
+	          .attr('class','Legends') // ====== if legends right side add class name 'Right'
+	          //.classed('Right',true)
+	          .append('ul');
+	        var legend = legends.selectAll('.Legend')
+	          .data(color.domain())
+	          .enter().append('li')
+	          .attr('class','Legend');
+	        legend.append('svg')
+	          .attr('width', 25)
+	          .attr('height', 10)
+	          .append('line')
+	          .attr('x1', 0)
+	          .attr('x2', 25)
+	          .attr('y1', 5)
+	          .attr('y2', 5)
+	          .attr('stroke',color)
+	        legend.append('span')
+	          .text(function(d){ return d });
+	        /* ========== End Legends ========= */
+		});
+
+		</script>
+	</body>
+</html>

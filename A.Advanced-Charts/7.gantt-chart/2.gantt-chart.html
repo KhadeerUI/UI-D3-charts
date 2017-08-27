@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+  background: rgba(0,0,0,.1);
+  font: 12px/1.4 arial;
+  text-align: center;
+  list-style-position: inside;
+  color: #333;
+}
+text {
+  fill: #555;
+}
+.ChartBox {
+    padding: 1em;
+    display: inline-block;
+    background: #fff;
+    box-shadow: 0 2px 3px rgba(0,0,0,.1);
+    border-radius: 3px;
+}
+.axis path, .axis line {
+      fill: none;
+      stroke: rgba(0,0,0,.2);
+      shape-rendering: crispEdges;
+  }
+  .GridLines line, .AxisGrid line {
+    stroke: rgba(0,0,0,.05);
+    shape-rendering: crispEdges;
+  }
+  .Tooltip {
+    line-height: 1;
+    padding: 10px 15px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #eee;
+    border-radius: 3px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  }
+  /* Creates a small triangle extender for the tooltip */
+  .Tooltip:after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    border: 6px solid transparent;
+    border-top-color: rgba(0,0,0,.8);
+    margin-left: -6px;
+  }
+  .box line,
+  .box rect,
+  .box circle {
+    fill: steelblue;
+    stroke: #000;
+    stroke-width: 1px;
+  }
+  /* .bar {
+    fill: #33b5e5;
+  }
+  .bar-failed {
+    fill: #CC0000;
+  }
+  .bar-running {
+    fill: #669900;
+  } 
+  .bar-succeeded {
+    fill: #33b5e5;
+  }
+  .bar-killed {
+    fill: #ffbb33;
+  } */
+
+  .bar-red {
+    fill: #CC0000;
+  }
+
+  .bar-green {
+    fill: #669900;
+  }
+
+  .bar-blue {
+    fill: #33b5e5;
+  }
+
+  .bar-yellow {
+    fill: #ffbb33;
+  }
+
+  .Legends ul {
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
+  }
+  .Legends ul li {
+    padding: 1em 1em .2em;
+    line-height: 1.2;
+    display: inline-block;
+  }
+  .Legends li > :first-child, .Legends li > :last-child {
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 5px;
+  }
+  .Legends li > :last-child {
+    margin-right: 0;
+    color: #555;
+  }
+  .Legends.Right {
+    width: 150px;
+    vertical-align: top;
+    display: inline-block;
+  }
+  .Legends.Right ul {
+    margin-top: 0;
+  }
+  .Legends.Right ul li {
+    text-align: left;
+    padding: 10px 0;
+    display: block;
+  }
+  .Legends.Right li > :first-child {
+    margin-right: 0;
+    width: 35px;
+  }
+  .Legends.Right li > :last-child {
+    width: calc(100% - 35px)
+  }
+  .Legends li line {
+    stroke-width: 2.5px;
+  }
+
+
+</style>
+</head>
+<body>
+
+<div class="ChartBox"></div>
+
+<script src="../../js/jquery.js"></script>
+<script src="../../js/d3.v3.min.js"></script>
+<script src="js/gantt-chart-d3v2.1.js"></script>
+<script>
+
+	//example();
+
+  (function example() {
+      var tasks = [];
+
+      var taskStatus = {
+          "Bill Johnson" : "bar",
+          "Joe Johnson" : "bar-red",
+          };
+
+      d3.json("data.json", function(error, data) {
+        if (error)
+        return console.warn(error);
+        var taskNames = [];
+        for ( var i = 0; i < data.length; i++) {
+          for ( var j = 0; j < data[i].values.length; j++) {
+            var role = data[i].values[j]["Role"];
+            var company = data[i].values[j]["Company"];
+            var roleAndCompany = role + "(" + company + ")";
+            var name = data[i]["name"];
+            taskNames.push(roleAndCompany);
+            tasks.push({
+                "startDate" : new Date(data[i].values[j]["from date"]),
+                "endDate" : new Date(data[i].values[j]["to date"]),
+                "taskName" : roleAndCompany,
+                "status" : name
+              });
+
+            console.log(data[i].values[j].Company)
+          }
+        }
+        var format = "%b %e, %Y";
+        // var gantt = d3.gantt().taskTypes(taskNames).taskStatus(taskStatus).tickFormat(format);
+        var gantt = d3.gantt().taskTypes(taskNames).taskStatus(taskStatus).tickFormat(format);
+        gantt(tasks);
+      });
+
+  })();
+
+</script>
+</body>
+</html>

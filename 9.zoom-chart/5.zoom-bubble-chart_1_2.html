@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+  background: rgba(0,0,0,.1);
+  font: 12px/1.4 arial;
+  text-align: center;
+  list-style-position: inside;
+  color: #333;
+}
+text {
+  fill: #555;
+}
+.ChartBox {
+    padding: 1em;
+    display: inline-block;
+    background: #fff;
+    box-shadow: 0 2px 3px rgba(0,0,0,.1);
+    border-radius: 3px;
+    position: relative;
+}
+.axis path, .axis line {
+      fill: none;
+      stroke: rgba(0,0,0,.2);
+      shape-rendering: crispEdges;
+  }
+  path.line {
+      fill: none;
+      stroke-width: 1px;
+  }
+  path {
+    fill: none;
+    stroke: #05c;
+  }
+  .brush .extent {
+    stroke: #fff;
+    fill-opacity: .125;
+    shape-rendering: crispEdges;
+  }
+  .clear-button {
+    cursor: pointer;
+  }
+  /* .point {
+    fill: #05c;
+    fill-opacity: .5;
+    stroke: #05c;
+    stroke-opacity: .9;
+    stroke-width: 1.5px;
+  } */
+  .selected {
+    fill-opacity: 1;
+  }
+  .tooltip {
+    background: rgba(0,0,0,.8);
+    color: #eee;
+    border-radius: 3px;
+    padding: 10px 1em;
+    box-shadow: 0 2px 5px rgba(0,0,0,.1);
+    position: absolute;
+    white-space: nowrap;
+  }
+  .tooltip:after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    border: 5px solid transparent;
+    border-right-color: rgba(0,0,0,.8);
+    right: 100%;
+    margin-top: -5px;
+  }
+  .GridLines line {
+    stroke: rgba(0,0,0,.05);
+    shape-rendering: crispEdges;
+  }
+  .Cont {
+    display: block;
+    background: #fff;
+    padding: 1em;
+    font-size: 15px;
+    text-align: left;
+    margin: 1em;
+  }
+  .Legends ul {
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
+  }
+  .Legends ul li {
+    padding: 1em 1em .2em;
+    line-height: 1.2;
+    display: inline-block;
+  }
+  .Legends li > :first-child, .Legends li > :last-child {
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 5px;
+  }
+  .Legends li > :last-child {
+    margin-right: 0;
+    color: #555;
+  }
+  .Legends.Right {
+    width: 150px;
+    vertical-align: top;
+    display: inline-block;
+  }
+  .Legends.Right ul {
+    margin-top: 0;
+  }
+  .Legends.Right ul li {
+    text-align: left;
+    padding: 10px 0;
+    display: block;
+  }
+  .Legends.Right li > :first-child {
+    margin-right: 0;
+    width: 35px;
+  }
+  .Legends.Right li > :last-child {
+    width: calc(100% - 35px)
+  }
+  .Legends li line {
+    stroke-width: 2.5px;
+  }
+
+
+</style>
+</head>
+<body>
+
+<div class="ChartBox"></div>
+<div class="Cont">
+  <h2>List of Changes</h2>
+  <ol>
+    <li>Added brush(zoom) x and y axis functionality for Bubble Chart</li>
+  </ol>
+</div>
+
+<script src="../js/d3.v3.min.js"></script>
+<script>
+  d3.helper = {};
+
+  d3.helper.tooltip = function(){
+      var tooltipDiv;
+      var bodyNode = d3.select('.ChartBox').node();
+
+      function tooltip(selection){
+
+          selection.on('mouseover.tooltip', function(pD, pI){
+              d3.select(this)
+                .transition()
+                .duration(250)
+                .attr('fill-opacity',1);
+              // Clean up lost tooltips
+              d3.select('.ChartBox').selectAll('div.tooltip').remove();
+              // Append tooltip
+              tooltipDiv = d3.select('.ChartBox')
+                             .append('div')
+                             .attr('class', 'tooltip')
+              var absoluteMousePos = d3.mouse(bodyNode);
+              tooltipDiv.style({
+                  left: (absoluteMousePos[0] + 10)+'px',
+                  top: (absoluteMousePos[1] - 40)+'px'
+              });
+
+              var first_line = '<div>X-Value: ' + pD.index + '</div>'
+              var second_line = '<div>Y-Value: ' + pD.value + '</div>'
+
+              tooltipDiv.html(first_line + second_line)
+          })
+          .on('mousemove.tooltip', function(pD, pI){
+              // Move tooltip
+              var absoluteMousePos = d3.mouse(bodyNode);
+              tooltipDiv.style({
+                  left: (absoluteMousePos[0] + 10)+'px',
+                  top: (absoluteMousePos[1] - 40)+'px'
+              });
+          })
+          .on('mouseout.tooltip', function(pD, pI){
+              d3.select(this).attr('fill-opacity',.5);
+              // Remove tooltip
+              tooltipDiv.remove();
+          });
+
+      }
+
+      /*tooltip.attr = function(_x){
+          if (!arguments.length) return attrs;
+          attrs = _x;
+          return this;
+      };
+
+      tooltip.style = function(_x){
+          if (!arguments.length) return styles;
+          styles = _x;
+          return this;
+      };*/
+
+      return tooltip;
+  };
+
+  var data = [];
+  var values = [];
+  for (var i = 2; i <= 50; i++) {
+      var val = Math.floor(Math.random() * (50 - 5 + 1) + 5);
+      data.push({index: i, value: val});
+      values.push(val);
+  }
+
+  var margin = {top: 20, right: 20, bottom: 50, left: 60},
+      width = 960 - margin.left - margin.right,
+      height = 500 - margin.top - margin.bottom;
+
+  //var color = d3.scale.category10();
+
+  var color = '#05c';
+
+  var x = d3.scale.linear()
+      .range([0, width])
+      .domain([0, 50]);
+
+  var y = d3.scale.linear()
+      .range([height, 0])
+      .domain([0, d3.max(values) + 5]);
+
+  var brush = d3.svg.brush()
+      .x(x)
+      .y(y)
+      .on("brush", brushmove)
+      .on("brushend", brushend);
+
+  var xAxis = d3.svg.axis()
+      .scale(x)
+      .orient("bottom");
+
+  var yAxis = d3.svg.axis()
+      .scale(y)
+      .orient("left")
+      .ticks(10);
+
+  var svg = d3.select(".ChartBox").append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+      .append('text')
+      .text('Y Values')
+      .attr('transform','rotate(-90)')
+      .attr('y', -margin.left + 20)
+      .style('text-anchor','end');
+
+  svg.append("g")
+      .attr("class", "x axis")
+      //.attr("clip-path", "url(#clip)")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis)
+      .append('text')
+      .text('X Values')
+      .attr('x', width)
+      .attr('y', margin.bottom - 2)
+      .style('text-anchor','end');
+
+  svg.append('g')
+      .attr('class','GridLines')
+      .selectAll('.GridLines line')
+      .data(y.ticks(10))
+      .enter().append('line')
+      .attr('x2', width)
+      .attr('y1', y)
+      .attr('y2', y);
+
+  svg.append('g')
+      .attr('class','GridLines')
+      .selectAll('.GridLines line')
+      .data(y.ticks(10))
+      .enter().append('line')
+      .attr('x1', x)
+      .attr('x2', x)
+      .attr('y2', height);
+
+  svg.append("g")
+      .attr("class", "brush")
+      .call(brush)
+      //.selectAll('rect')
+      //.attr('height', height);
+
+  svg.append("defs").append("clipPath")
+      .attr("id", "clip")
+      .append("rect")
+      .attr("width", width)
+      .attr("height", height);
+
+  points = svg.selectAll(".point")
+      .data(data)
+      .enter().append("circle")
+      .attr("class", "point")
+      .attr("clip-path", "url(#clip)")
+      .attr("r", function(d){return Math.floor(Math.random() * (20 - 5 + 1) + 5);})
+      .attr("cx", function(d) { return x(d.index); })
+      .attr("cy", function(d) { return y(d.value); })
+      .attr('fill', function(d,i){ return color })
+      .attr('fill-opacity',.5)
+      .attr('stroke', function(d,i){ return color })
+      .attr('stroke-width', '1.2px')
+      .call(d3.helper.tooltip());
+
+  points.on('mousedown', function(){
+    brush_elm = svg.select(".brush").node();
+    new_click_event = new Event('mousedown');
+    new_click_event.pageX = d3.event.pageX;
+    new_click_event.clientX = d3.event.clientX;
+    new_click_event.pageY = d3.event.pageY;
+    new_click_event.clientY = d3.event.clientY;
+    brush_elm.dispatchEvent(new_click_event);
+  });
+
+  function brushmove() {
+    var extent = brush.extent();
+    points.classed("selected", function(d) {
+      is_brushed = extent[0] <= d.index && d.index <= extent[1];
+      console.log(d.index)
+      return is_brushed;
+    });
+
+  }
+
+
+  function brushend() {
+    if(brush.empty()){
+      console.log('empty');
+      
+      x.domain([0, 50]);
+      y.domain([0, d3.max(values) + 5])
+      transition_data();
+      reset_axis();
+      clear_button.remove();
+    }
+    else {
+
+      //x.domain(brush.extent());
+      //y.domain(brush.extent());
+
+      var extent = brush.extent();
+      x.domain(brush.empty() ? x.domain() : [ extent[0][0], extent[1][0] ]);
+      y.domain(brush.empty() ? y.domain() : [ extent[0][1], extent[1][1] ]);
+
+      transition_data();
+      reset_axis();
+
+      points.classed("selected", false);
+      d3.select(".brush").call(brush.clear());
+
+      get_button = d3.select(".clear-button");
+        console.dir('get_button: '+get_button)
+        if(get_button.empty()) {
+          clear_button = d3.select('.ChartBox').append('div')
+            .attr("class", "clear-button")
+            .style('text-anchor','end')
+            .text("Clear Brush")
+            .style({
+              background: '#eee',
+              'border-radius': '3px',
+              'box-shadow': '0 0 1px rgba(0,0,0,.3) inset',
+              padding: '10px 1em',
+              position: 'absolute',
+              'white-space': 'nowrap',
+              left: width - 10 +'px',
+              top: '10px'
+            })
+        }
+        clear_button.on('click', function(){
+          x.domain([0, 50]);
+          y.domain([0, d3.max(values) + 5])
+          transition_data();
+          reset_axis();
+          clear_button.remove();
+        });
+      }
+
+  }
+
+  function transition_data() {
+    svg.selectAll(".point")
+      .data(data)
+      .transition()
+      .duration(1000)
+      .attr("cx", function(d) { return x(d.index); })
+      .attr("cy", function(d) { return y(d.value); });
+  }
+
+  function reset_axis() {
+    var transition = svg.transition().duration(1000);
+    transition.select(".x.axis")
+      .call(xAxis)
+    transition.select('.y.axis')
+      .call(yAxis);
+  }
+
+  /*============= Legends ==============*/
+  var legends = d3.select('.ChartBox').append('div')
+    .attr('class','Legends') // ====== if legends right side add class name 'Right'
+    //.classed('Right',true)
+    .append('ul');
+  var legend = legends.selectAll('.Legend')
+    .data([1])
+    .enter().append('li')
+    .attr('class','Legend');
+  legend.append('svg')
+    .attr('width', 25)
+    .attr('height', 10)
+    .append('line')
+    .attr('x1', 0)
+    .attr('x2', 25)
+    .attr('y1', 5)
+    .attr('y2', 5)
+    .attr('stroke',color)
+  legend.append('span')
+    .text('Randam Data');
+  /* ========== End Legends ========= */
+
+</script>
+</body>
+</html>
+

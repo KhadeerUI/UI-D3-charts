@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+  background: rgba(0,0,0,.1);
+  font: 12px/1.4 arial;
+  text-align: center;
+  list-style-position: inside;
+  color: #333;
+}
+text {
+  fill: #555;
+}
+.ChartBox {
+    padding: 1em;
+    display: inline-block;
+    background: #fff;
+    box-shadow: 0 2px 3px rgba(0,0,0,.1);
+    border-radius: 3px;
+    position: relative;
+}
+.axis path, .axis line {
+      fill: none;
+      stroke: rgba(0,0,0,.3);
+      shape-rendering: crispEdges;
+  }
+  path.line {
+      fill: none;
+      stroke-width: 1px;
+  }
+  path {
+    fill: none;
+    stroke: #05c;
+  }
+  .brush .extent {
+    stroke: #fff;
+    fill-opacity: .125;
+    shape-rendering: crispEdges;
+  }
+  .clear-button {
+    cursor: pointer;
+  }
+  .point {
+    fill: #05c;
+    fill-opacity: .5;
+    stroke: #05c;
+    stroke-opacity: .9;
+    stroke-width: 1.5px;
+  }
+  .selected {
+    fill-opacity: 1;
+  }
+
+
+</style>
+</head>
+<body>
+
+<div class="ChartBox">
+  <svg width="900" height="500"></svg>
+</div>
+
+<script src="../js/d3.v4.min.js"></script>
+<script>
+  var random = d3.randomNormal(0, 0.2),
+      sqrt3 = Math.sqrt(3),
+      points0 = d3.range(300).map(function() { return [random() + sqrt3, random() + 1, 0]; }),
+      points1 = d3.range(300).map(function() { return [random() - sqrt3, random() + 1, 1]; }),
+      points2 = d3.range(300).map(function() { return [random(), random() - 1, 2]; }),
+      points = d3.merge([points0, points1, points2]);
+
+  var svg = d3.select("svg"),
+      width = +svg.attr("width"),
+      height = +svg.attr("height");
+
+  var k = height / width,
+      x0 = [-4.5, 4.5],
+      y0 = [-4.5 * k, 4.5 * k],
+      x = d3.scaleLinear().domain(x0).range([0, width]),
+      y = d3.scaleLinear().domain(y0).range([height, 0]),
+      z = d3.scaleOrdinal(d3.schemeCategory10);
+
+  var xAxis = d3.axisTop(x).ticks(12),
+      yAxis = d3.axisRight(y).ticks(12 * height / width);
+
+  var brush = d3.brush().on("end", brushended),
+      idleTimeout,
+      idleDelay = 350;
+
+  svg.selectAll("circle")
+    .data(points)
+    .enter().append("circle")
+      .attr("cx", function(d) { return x(d[0]); })
+      .attr("cy", function(d) { return y(d[1]); })
+      .attr("r", 2.5)
+      .attr("fill", function(d) { return z(d[2]); });
+
+  svg.append("g")
+      .attr("class", "axis axis--x")
+      .attr("transform", "translate(0," + (height - 10) + ")")
+      .call(xAxis);
+
+  svg.append("g")
+      .attr("class", "axis axis--y")
+      .attr("transform", "translate(10,0)")
+      .call(yAxis);
+
+  svg.append("g")
+      .attr("class", "brush")
+      .call(brush);
+
+  function brushended() {
+    var s = d3.event.selection;
+    if (!s) {
+      if (!idleTimeout) return idleTimeout = setTimeout(idled, idleDelay);
+      x.domain(x0);
+      y.domain(y0);
+    } else {
+      x.domain([s[0][0], s[1][0]].map(x.invert, x));
+      y.domain([s[1][1], s[0][1]].map(y.invert, y));
+      svg.select(".brush").call(brush.move, null);
+    }
+    zoom();
+  }
+
+  function idled() {
+    idleTimeout = null;
+  }
+
+  function zoom() {
+    var t = svg.transition().duration(750);
+    svg.select(".axis--x").transition(t).call(xAxis);
+    svg.select(".axis--y").transition(t).call(yAxis);
+    svg.selectAll("circle").transition(t)
+        .attr("cx", function(d) { return x(d[0]); })
+        .attr("cy", function(d) { return y(d[1]); });
+  }
+</script>
+</body>
+</html>
+

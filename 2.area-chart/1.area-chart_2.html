@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>D3 JS</title>
+		<style>
+
+			body {
+			  font: 10px segoe ui;
+			  text-align: center;
+			  background: rgba(0,0,0,.1);
+			}
+
+			text.shadow {
+			  stroke: #fff;
+			  stroke-width: 3px;
+			}
+
+			path { 
+			    stroke: #05c;
+			    stroke-width: 2;
+			    fill: none;
+			}
+
+			.axis path,
+			.axis line {
+			    fill: none;
+			    stroke: rgba(0,0,0,.3);
+			    stroke-width: 0;
+			    shape-rendering: geometricPrecision;
+			}
+
+			.grid .tick {
+			    stroke: rgba(0,0,0,.05);
+			    shape-rendering: geometricPrecision;;
+			}
+			.grid path {
+			    stroke-width: 0;
+			}
+
+			.area {
+			    fill: rgba(0,85,204,.3);
+			    stroke-width: 0;
+			}
+			.CircleG circle {
+				stroke: #05c;
+				stroke-width: 1.5px;
+				fill: #fff;
+			}
+			div.tooltip {	
+			    position: absolute;			
+			    text-align: center;			
+			    padding: 10px 1em;			
+			    background: rgba(0,0,0,.8);
+			    color: #eee;
+			    box-shadow: 0 0 3px rgba(0,0,0,.3);
+			    border: 0px;		
+			    border-radius: 3px;			
+			    pointer-events: none;
+			    font-size: 12px;	
+			}
+			div.tooltip:after {
+				content: '';
+			    position: absolute;
+			    bottom: -12px;
+			    left: 50%;
+			    margin-left: -5px;
+			    border: 6px solid transparent;
+			    border-top-color: rgba(0,0,0,.8);
+			}
+			div.tooltip.top:after {
+				bottom: auto;
+				top: -12px;
+				border-top-color: transparent;
+				border-bottom-color: rgba(0,0,0,.8);
+			}
+			div.tooltip .Text {
+				display: block;
+			}
+			.chart {
+				display: inline-block;
+				background: #fff;
+				box-shadow: 0 2px 2px rgba(0,0,0,0.1);
+				padding: 1em;
+				border-radius: 3px;
+			}
+
+
+		@media (max-width:640px) {
+			.svgRes {
+				width: auto;
+				height: auto;
+			}
+		}
+
+
+		</style>
+	</head>
+	<body>
+
+		<div id="ChartBox" class="chart"></div>
+
+		<!-- <script src="js/d3.js"></script> -->
+		<script src="https://code.jquery.com/jquery-3.1.0.min.js"></script>
+		<script src="http://d3js.org/d3.v3.min.js"></script>
+		<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+		<script>
+
+			var margin = {top: 30, right: 20, bottom: 35, left: 50},
+			    width = 600 - margin.left - margin.right,
+			    height = 270 - margin.top - margin.bottom;
+
+			var parseDate = d3.time.format("%d-%b-%y").parse;
+				bisectDate = d3.bisector(function(d) { return d.date; }).left,
+			    formatValue = d3.format(",.1f"),
+			    formatCurrency = function(d) { return formatValue(d) + "%"; };
+
+			var x = d3.time.scale().range([0, width]);
+			var y = d3.scale.linear().range([height, 0]);
+
+
+			var xAxis = d3.svg.axis()
+			    .scale(x)
+			    .orient("bottom")
+			    .ticks(3);
+
+			var yAxis = d3.svg.axis()
+			    .scale(y)
+			    .orient("left")
+			    .ticks(5);
+
+			var area = d3.svg.area()
+			    .x(function(d) { return x(d.date); })
+			    .y0(height)
+			    .y1(function(d) { return y(d.close); })
+
+			var valueline = d3.svg.line()
+			    .x(function(d) { return x(d.date); })
+			    .y(function(d) { return y(d.close); });
+			    
+			var svg = d3.select("#ChartBox")
+			    .append("svg")
+			        .attr("width", width + margin.left + margin.right)
+			        .attr("height", height + margin.top + margin.bottom)
+			    .append("g")
+			        .attr("transform", 
+			              "translate(" + margin.left + "," + margin.top + ")");
+
+			// function for the x grid lines
+			function make_x_axis() {
+			    return d3.svg.axis()
+			        .scale(x)
+			        .orient("bottom")
+			        .ticks(0)
+			}
+
+			// function for the y grid lines
+			function make_y_axis() {
+			  return d3.svg.axis()
+			      .scale(y)
+			      .orient("left")
+			      .ticks(5)
+			}
+
+			// Get the data
+			d3.csv("data2.csv", function(error, data) {
+			    data.forEach(function(d) {
+			        d.date = parseDate(d.date);
+			        d.close = +d.close;
+			    });
+
+			    // Scale the range of the data
+			    x.domain(d3.extent(data, function(d) { return d.date; }));
+			    y.domain([0, d3.max(data, function(d) { return d.close; })]);
+
+			    // Add the filled area
+			    svg.append("path")
+			        .datum(data)
+			        .attr("class", "area")
+			        .attr("d", area)
+
+			    // Draw the x Grid lines
+			    svg.append("g")
+			        .attr("class", "grid")
+			        .attr("transform", "translate(0," + height + ")")
+			        .call(make_x_axis()
+			            .tickSize(-height, 0, 0)
+			            .tickFormat("")
+			        )
+			        
+
+			    // Draw the y Grid lines
+			    svg.append("g")            
+			        .attr("class", "grid")
+			        .call(make_y_axis()
+			            .tickSize(-width, 0, 0)
+			            .tickFormat("")
+			        )
+
+			    // Add the valueline path.
+			    svg.append("path")
+			        .attr("d", valueline(data));
+
+			    // Add the X Axis
+			    svg.append("g")
+			        .attr("class", "x axis")
+			        .attr("transform", "translate(0," + height + ")")
+			        .call(xAxis);
+
+			    // Add the Y Axis
+			    svg.append("g")
+			        .attr("class", "y axis")
+			        .call(yAxis);
+
+			    // Add the text label for the X axis
+			    svg.append("text")
+			        .attr("transform",
+			              "translate(" + (width/2) + " ," + (height+margin.bottom) + ")")
+			        .style("text-anchor", "middle")
+			        .text("Date");
+
+			    // Add the white background to the y axis label for legibility
+			    svg.append("text")
+			        .attr("transform", "rotate(-90)")
+			        .attr("y", 6)
+			        .attr("x", margin.top - (height / 2))
+			        .attr("dy", ".71em")
+			        .style("text-anchor", "end")
+			        .attr("class", "shadow")
+			        .text("Price ($)");
+
+			    // Add the text label for the Y axis
+			    svg.append("text")
+			        .attr("transform", "rotate(-90)")
+			        .attr("y", 6)
+			        .attr("x", margin.top - (height / 2))
+			        .attr("dy", ".71em")
+			        .style("text-anchor", "end")
+			        .text("Price ($)");
+
+			    // Add the title
+			    svg.append("text")
+			        .attr("x", (width / 2))     
+			        .attr("y", 0 - (margin.top / 2))
+			        .attr("text-anchor", "middle")
+			        .style("font-size", "16px")
+			        .style("text-decoration", "underline")
+			        .text("Price vs Date Graph");
+
+
+			     var tip = d3.tip()
+					  .attr('class', 'tooltip')
+					  .offset([-10, 0])
+					  .html(function(d) {
+					    return "<strong>FormatCurrency:</strong><br/> <span style='color:red'>" + formatCurrency(d.close) + "</span>";
+					  });
+
+				svg.call(tip);
+
+			    // Add the scatterplot
+				svg.append("g")
+					.attr('class','CircleG')
+					.selectAll('dot')	
+			        .data(data)		
+			    		.enter().append("circle")								
+				        .attr("r", 3)		
+				        .attr("cx", function(d) { return x(d.date); })		 
+				        .attr("cy", function(d) { return y(d.close); })
+				        .on('mouseover', tip.show)
+  						.on('mouseout', tip.hide)
+			
+			});	        
+
+		</script>
+	</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+  background: rgba(0,0,0,.1);
+  font: 12px/1.4 arial;
+  text-align: center;
+  list-style-position: inside;
+  color: #333;
+}
+text {
+  fill: #555;
+}
+.ChartBox {
+    padding: 1em;
+    display: inline-block;
+    background: #fff;
+    box-shadow: 0 2px 3px rgba(0,0,0,.1);
+    border-radius: 3px;
+    position: relative;
+}
+.node rect {
+  fill-opacity: .9;
+  shape-rendering: crispEdges;
+  stroke-width: 0;
+}
+.node text {
+  text-shadow: 0 1px 0 #fff;
+}
+.link {
+  fill: none;
+  stroke: #000;
+  stroke-opacity: .2;
+}
+
+
+
+</style>
+</head>
+<body>
+
+<div class="ChartBox"></div>
+
+<script src="../../js/jquery.js"></script>
+<script src="../../js/d3.v3.min.js"></script>
+<script src="js/sankey.js"></script>
+<script src="js/d3.chart.min.js"></script>
+<script src="js/d3.chart.sankey.min.js"></script>
+<script>
+
+  var width = 800,
+      height = 400;
+
+	var colors = {
+        'environment':         '#edbd00',
+        'social':              '#367d85',
+        'animals':             '#97ba4c',
+        'health':              '#f5662b',
+        'research_ingredient': '#3f3e47',
+        'fallback':            '#9f9fa3'
+      };
+  d3.json("data.json", function(error, json) {
+    var chart = d3.select(".ChartBox").append("svg")
+      .attr('width',width)
+      .attr('height',height)
+      .chart("Sankey.Path");
+    chart
+      .name(label)
+      .colorNodes(function(name, node) {
+        return color(node, 1) || colors.fallback;
+      })
+      .colorLinks(function(link) {
+        return color(link.source, 4) || color(link.target, 1) || colors.fallback;
+      })
+      .nodeWidth(15)
+      .nodePadding(10)
+      .spread(true)
+      .iterations(0)
+      .draw(json);
+    function label(node) {
+      return node.name.replace(/\s*\(.*?\)$/, '');
+    }
+    function color(node, depth) {
+      var id = node.id.replace(/(_score)?(_\d+)?$/, '');
+      if (colors[id]) {
+        return colors[id];
+      } else if (depth > 0 && node.targetLinks && node.targetLinks.length == 1) {
+        return color(node.targetLinks[0].source, depth-1);
+      } else {
+        return null;
+      }
+    }
+  });
+
+</script>
+</body>
+</html>

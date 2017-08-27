@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- <link href="../../css/style.css" rel="stylesheet"> -->
+<style>
+* {
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+}
+body {
+  background: rgba(0,0,0,.1);
+  font: 12px/1.4 arial;
+  text-align: center;
+  list-style-position: inside;
+  color: #333;
+}
+text {
+  fill: #555;
+}
+.Col {
+  display: inline-block;
+  width: 70%;
+  font-size: 12px;
+}
+.ChartBox {
+    padding: 1em;
+    display: inline-block;
+    background: #fff;
+    box-shadow: 0 2px 3px rgba(0,0,0,.1);
+    border-radius: 3px;
+    position: relative;
+}
+.axis path, .axis line {
+      fill: none;
+      stroke: rgba(0,0,0,.2);
+      shape-rendering: geometricPrecision;
+  }
+  path.line {
+      fill: none;
+      stroke-width: 1px;
+  }
+  .y.axis line {
+    stroke: #f2f2f2;
+  }
+  .axis text {
+    font-size: 11px;
+  }
+  .Tooltip {
+    line-height: 1;
+    padding: 10px 15px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #eee;
+    border-radius: 3px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    position: absolute;
+    z-index: 999;
+    white-space: nowrap;
+  }
+  /* Creates a small triangle extender for the tooltip */
+  .Tooltip:after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    border: 6px solid transparent;
+    border-top-color: rgba(0,0,0,.8);
+    margin-left: -6px;
+  }
+  .Svg {  
+    margin: 0 2px;
+    box-shadow: 0 2px 4px rgba(0,0,0,.2);
+  }
+  .Cont {
+    display: block;
+    background: #fff;
+    padding: 1em;
+    font-size: 15px;
+    text-align: left;
+    margin: 1em;
+}
+
+
+</style>
+</head>
+<body>
+
+<div class="Col">
+  <div class="ChartBox"></div>
+</div>
+<div class="Cont">
+  <h2>List of Changes</h2>
+  <ol>
+    <li>Added individual boxes for each graph</li>
+    <li>Added animation for each graph</li>
+    <li>Tooltip position for all bars, i wrote hand-coding (but d3js using some additional tooltip plugin)</li>
+  </ol>
+</div>
+
+<script src="../../js/jquery.js"></script>
+<script src="../../js/d3.v3.min.js"></script>
+<script>
+
+	var margin = {top: 40, right: 20, bottom: 40, left: 40},
+      width = 400 - margin.left - margin.right,
+      height = 150 - margin.top - margin.bottom;
+
+  var formatPercent = d3.format('.0%');
+
+  /*var color = d3.scale.linear()
+            .range(["#ca0020","#f4a582","#f7f7f7","#92c5de","#0571b0"])
+            .domain([0,0.2,0.4,0.6,0.8]);*/
+
+  var color = d3.scale.linear()
+      .range(['#d3553d','#ddd','#05c'])
+      .domain([0,.5,1])
+
+  var x = d3.scale.ordinal()
+      .rangeRoundBands([0, width], .1);
+
+  // Scales. Note the inverted domain fo y-scale: bigger is up!
+  var y = d3.scale.linear()
+      .range([height, 0]);
+
+  var xAxis = d3.svg.axis()
+      .scale(x)
+      .orient("bottom");
+
+  var yAxis = d3.svg.axis()
+      .scale(y)
+      .orient("left")
+      //.tickFormat(formatPercent)
+      .innerTickSize(-width,0)
+      .tickPadding(10)
+      .ticks(3)
+
+  // tsv loaded asynchronously
+  d3.tsv("data2.tsv", type, function(data) {
+
+    // Data is nested by country
+    var countries = d3.nest()
+        .key(function(d) { return d.country; })
+        .entries(data);
+
+    // Parse dates and numbers. We assume values are sorted by date.
+    // Also compute the maximum price per symbol, needed for the y-domain.
+    // symbols.forEach(function(s) {
+    //   s.values.forEach(function(d) { d.date = parse(d.date); d.price = +d.price; });
+    //   s.maxPrice = d3.max(s.values, function(d) { return d.price; });
+    // });
+
+    // Compute the minimum and maximum year and percent across symbols.
+    x.domain(data.map(function(d) { return d.year; }));
+    //y.domain([0, d3.max(countries, function(d) { return d.values[0].percent; })]);
+    y.domain([0,d3.max(data,function(d){ return d.percent })])
+
+    // Add an SVG element for each country, with the desired dimensions and margin.
+    var svg = d3.select(".ChartBox").selectAll("svg")
+      .data(countries)
+      .enter()
+      .append("svg")
+      .classed('Svg',true)
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis)
+    svg.select('.x.axis')
+        .selectAll('text')
+        .style({
+          'transform': 'rotate(-40deg)',
+          'text-anchor': 'end'         
+        })
+
+    svg.append("g")
+        .attr("class", "y axis")
+        .call(yAxis);
+    svg.select('.y.axis')
+      .selectAll('text')
+
+    svg.append("g")
+        // Hide y axis
+        // .attr("class", "y axis")
+        // .call(yAxis)
+      .append("text")
+      .attr("x", width/2)
+      .attr("y", 0)
+      .attr("dy", "-1.5em")
+      .attr("text-anchor", "middle")
+      .text(function(d) { return d.key});
+
+    // Accessing nested data: https://groups.google.com/forum/#!topic/d3-js/kummm9mS4EA
+    // data(function(d) {return d.values;}) 
+    // this will dereference the values for nested data for each group
+    svg.selectAll(".bar")
+        .data(function(d) {return d.values;})
+        .enter()
+        .append("rect")
+        .attr("class", "bar")
+        .attr("y", function(d) { return height })
+        .attr("height", function(d) { return 0 })
+        .attr("fill", function(d) {return color(d.percent)})
+        .transition()
+        .duration(1000)
+        .ease('elastic')
+        .delay(function(d,i){ return i*50 })
+        .attr("x", function(d) { return x(d.year); })
+        .attr("width", x.rangeBand())
+        .attr("y", function(d) { return y(d.percent); })
+        .attr("height", function(d) { return height - y(d.percent); });
+        
+    svg.selectAll(".bar")
+        .on('mouseover', function(d){
+            var tooltip = d3.select('.ChartBox').append('div')
+              .attr('class','Tooltip');
+            tooltip.html(d.year + ' in ' + d.country + '\t' + parseInt(d.percent*100) + '%' )
+            
+            var tooltipWidth = $('.Tooltip').innerWidth(),
+                tooltipHeight = $('.Tooltip').innerHeight(),
+                baroffsetLeft = $(this).offset().left,
+                baroffsetTop = $(this).offset().top,
+                barWidth = d3.select(this).attr('width'),
+                barHeight = parseInt(d3.select(this).attr('height')),
+                ChartBoxofLeft = $('.ChartBox').offset().left,
+                ChartBoxofTop = $('.ChartBox').offset().top;
+
+                console.log('offsetLeft: '+baroffsetLeft)
+                console.log('offsetTop: '+baroffsetTop)
+                console.log('tooltipWidth: '+tooltipWidth)
+                console.log('tooltipHeight: '+ parseInt(tooltipHeight + 10))
+                console.log('barHeight: '+barHeight)
+                console.log(baroffsetLeft - ChartBoxofLeft)
+
+            tooltip.style({
+                'left': (baroffsetLeft - ChartBoxofLeft) - ((tooltipWidth - barWidth)/2) + 'px',
+                'top': (baroffsetTop - (tooltipHeight + 20)) + 'px'
+            })
+            if((baroffsetTop - ChartBoxofTop) <= (tooltipHeight + 10)){
+                tooltip.style({
+                  'top': (baroffsetTop - (tooltipHeight)) + 'px'
+                })
+            }
+        })
+        .on('mouseout',function(d){
+            d3.select('.Tooltip').remove();
+        })
+        
+
+  });
+
+  function type(d) {
+    d.percent = +d.percent;
+    return d;
+  }
+
+</script>
+</body>
+</html>

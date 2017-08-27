@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset='UTF-8'>
+	<title>D3 JS</title>
+	<style>
+		body {
+			font: 12px/1.4 arial;
+			background: rgba(0,0,0,.1);
+			text-align: center;
+			color: #333;
+		}
+		text {
+			fill: #555;
+		}
+		.ChartBox {
+			display: inline-block;
+			background: #fff;
+			border-radius: 3px;
+			padding: 1em;
+			box-shadow: 0 2px 3px rgba(0,0,0,.1);
+			position: relative;
+		}
+		.axis path,
+		.axis line {
+		  fill: none;
+		  stroke: rgba(0,0,0,.3);
+		  shape-rendering: crispEdges;
+		}
+		.Tooltip {
+		  padding: 5px 10px;
+		  position: absolute;
+		  white-space: nowrap;
+		  background: rgba(0,0,0,.8);
+		  color: #fff;
+		  border-radius: 3px;
+		}
+		.Tooltip:after {
+		  content: '';
+		  position: absolute;
+		  top: 50%;
+		  right: 100%;
+		  border: 5px solid transparent;
+		  border-right-color: rgba(0,0,0,.8);
+		  margin-top: -5px;
+		}
+		.Tooltip.Right:after {
+		  top: 50%;
+		  right: auto;
+		  left: 100%;
+		  border-right-color: transparent;
+		  border-left-color: rgba(0,0,0,.8);
+		}
+		.Cont {
+			display: block;
+			background: #fff;
+			padding: 1em;
+			font-size: 15px;
+			text-align: left;
+			margin: 1em;
+		}
+		.GridLines line {
+		  stroke: rgba(0,0,0,.05);
+		  shape-rendering: crispEdges;
+		}
+		.Title {
+			font-size: 16px;
+			line-height: 1;
+			font-weight: 700;
+			padding: 10px 0;
+		}
+		.Legends ul {
+		  margin: 0;
+		  padding: 0;
+		  list-style-type: none;
+		}
+		.Legends ul li {
+		  padding: 1em 1em .2em;
+		  line-height: 1.2;
+		  display: inline-block;
+		}
+		.Legends li > :first-child, .Legends li > :last-child {
+		  display: inline-block;
+		  vertical-align: middle;
+		  margin-right: 5px;
+		}
+		.Legends li > :last-child {
+		  margin-right: 0;
+		  color: #555;
+		}
+		.Legends.Right {
+		  width: 150px;
+		  vertical-align: top;
+		  display: inline-block;
+		}
+		.Legends.Right ul {
+		  margin-top: 0;
+		}
+		.Legends.Right ul li {
+		  text-align: left;
+		  padding: 10px 0;
+		  display: block;
+		}
+		.Legends.Right li > :first-child {
+		  margin-right: 0;
+		  width: 35px;
+		}
+		.Legends.Right li > :last-child {
+		  width: calc(100% - 35px)
+		}
+		.Legends li line {
+		  stroke-width: 2.5px;
+		}
+
+	</style>
+</head>
+<body>
+
+	<div class="ChartBox"></div>
+	<div class="Cont">
+		<h2>List of Changes</h2>
+		<ol>
+			<li>Added Y axis grid lines in the chart background</li>
+			<li>Rectangle animation</li>
+			<li>Tooltip positions</li>
+			<li>Added x and y axis labels</li>
+			<li>Add Legends bottom</li>
+		</ol>
+	</div>
+	
+	<script src="../js/jquery.js"></script>
+	<script src="../js/d3.v3.min.js"></script>
+	<script>
+
+		var margin = {top: 20, right: 20, bottom: 50, left: 80},
+			width = 960 - margin.left - margin.right,
+			height = 500 - margin.top - margin.bottom;
+
+		var color = '#05c';
+
+		var x = d3.scale.ordinal()
+			.rangeRoundBands([0, width],.1);
+
+		var y = d3.scale.linear()
+			.range([height, 0]);
+
+		var xAxis = d3.svg.axis()
+			.scale(x)
+			.orient("bottom")
+
+		var yAxis = d3.svg.axis()
+			.scale(y)
+			.orient("left")
+			.ticks(10, "%");
+
+		var title = d3.select('.ChartBox').append('div')
+			.attr('class','Title')
+			.text('Bar Chart');
+
+		var svg = d3.select(".ChartBox").append("svg")
+			.attr("width", width + margin.left + margin.right)
+			.attr("height", height + margin.top + margin.bottom)
+		  	.append("g")
+			.attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+
+		d3.tsv("data5.tsv", type, function(error, data) {
+		  if (error) throw error;
+
+		  x.domain(data.map(function(d) { return d.letter; }));
+		  y.domain([0, d3.max(data, function(d) { return d.frequency; })]);
+
+		  svg.append("g")
+			  .attr("class", "x axis")
+			  .attr("transform", "translate(0," + height + ")")
+			  .call(xAxis)
+			  .append('text')
+			  .attr('transform','translate('+ width +','+ (margin.bottom-2) +')')
+		      .text('Letters')
+		      .style('text-anchor','end');
+
+		  svg.append("g")
+			  .attr("class", "y axis")
+			  .call(yAxis)
+			.append("text")
+			  .attr("transform", "rotate(-90)")
+			  .attr("y", -margin.left + 20)
+			  .style("text-anchor", "end")
+			  .text("Frequency");
+
+			svg.append('g')
+			  .attr('class','GridLines')
+			  .selectAll('.GridLines line')
+			  .data(y.ticks(10))
+			  .enter().append('line')
+			  .attr('x2', width)
+			  .attr('y1', y)
+			  .attr('y2', y);
+
+		  svg.selectAll('.bar')
+			  .data(data)
+			  .enter().append("rect")
+			  .attr("class", "bar")
+			  .attr('fill',color)
+			  .attr("x", function(d) { return x(d.letter); })
+			  .attr("width", x.rangeBand())
+			  .attr('y', height)
+			  .attr('height',0)
+			  .transition()
+			  .duration(500)
+			  .delay(function(d,i){ return i * 20 })
+			  .attr("y", function(d){ return y(d.frequency); })
+			  .attr("height", function(d){ return height - y(d.frequency); });
+
+		svg.selectAll('.bar')
+			  .on('mouseover', function(d){ 
+	  				d3.select(this)
+		            .attr('fill-opacity',.5)
+		          var tooltip = d3.select('.ChartBox').append('div')
+		              .attr('class','Tooltip');
+		          tooltip.style('opacity',0)
+		            .transition()
+		            .duration(500)
+		            .style('opacity',1);
+		          tooltip.append('text')
+		            .text( d.frequency )
+
+			  		var boxWidth = $('.ChartBox').innerWidth(),
+		                boxHeight = $('.ChartBox').innerWidth(),
+		                boxofLeft = $('.ChartBox').offset().left,
+		                boxofTop = $('.ChartBox').offset().top,
+		                tooltipW = $('.Tooltip').innerWidth(),
+		                tooltipH = $('.Tooltip').innerHeight(),
+		                barWidth = parseInt(d3.select('.bar').attr('width')),
+		                barHeight = parseInt(d3.select('.bar').attr('height')),
+		                barofLeft = $(this).offset().left,
+		                barofTop = $(this).offset().top;
+
+		                console.log(barWidth)
+
+		            tooltip.style({
+		              left: (barofLeft - boxofLeft) + (barWidth) + 'px',
+		              top: (barofTop - boxofTop) - ((tooltipH)/2) + 'px'
+		            })
+		            if((boxWidth/1.5) <= barofLeft ){
+		                $('.Tooltip').addClass('Right');
+		                tooltip.style({
+		                  left: (barofLeft - boxofLeft) - tooltipW + 'px'
+		                })
+		            }
+			  		
+			   })
+			  	.on('mouseout',function(){
+		          d3.select(this).attr('fill-opacity',1)
+		          d3.select('.Tooltip').remove();
+		        })
+			  
+
+
+			  /*============= Legends ==============*/
+	        var legends = d3.select('.ChartBox').append('div')
+	          .attr('class','Legends') // ====== if legends right side add class name 'Right'
+	          //.classed('Right',true)
+	          .append('ul');
+	        var legend = legends.selectAll('.Legend')
+	          .data([1])
+	          .enter().append('li')
+	          .attr('class','Legend');
+	        legend.append('svg')
+	          .attr('width', 25)
+	          .attr('height', 10)
+	          .append('line')
+	          .attr('x1', 0)
+	          .attr('x2', 25)
+	          .attr('y1', 5)
+	          .attr('y2', 5)
+	          .attr('stroke',color)
+	        legend.append('span')
+	          .text('Frequency');
+	        /* ========== End Legends ========= */
+
+		});
+
+		function type(d) {
+		  d.frequency = +d.frequency;
+		  return d;
+		}
+
+	</script>
+</body>
+</html>

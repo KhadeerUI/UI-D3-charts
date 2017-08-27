@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+  font: 12px/1.4 arial;
+  background: rgba(0,0,0,.1);
+  text-align: center;
+  list-style-position: inside;
+  color: #333;
+}
+text {
+  fill: #555;
+}
+.ChartBox {
+    padding: 1em;
+    display: inline-block;
+    background: #fff;
+    box-shadow: 0 2px 3px rgba(0,0,0,.1);
+    border-radius: 3px;
+    position: relative;
+}
+.axis path, .axis line {
+      fill: none;
+      stroke: rgba(0,0,0,.2);
+      shape-rendering: crispEdges;
+  }
+  path.line {
+      fill: none;
+      stroke-width: 1px;
+  }
+  .tooltip {
+    position: absolute;
+    pointer-events: none;
+    white-space: nowrap;
+    background: rgba(0,0,0,.8);
+    color: #eee;
+    padding: .5em 1em;
+    border-radius: 3px;
+    box-shadow: 0 1px 5px rgba(0,0,0,.3);
+  }
+  .tooltip:after {
+    content: '';
+    border: 5px solid transparent;
+    border-right-color: rgba(0,0,0,.8);
+    position: absolute;
+    top: 50%;
+    right: 100%;
+    margin-top: -5px;
+  }
+  .tooltip.right:after {
+    right: auto;
+    left: 100%;
+    border-right-color: transparent;
+    border-left-color: rgba(0,0,0,.8);
+  }
+  .GridLines line {
+    stroke: rgba(0,0,0,.05);
+    shape-rendering: crispEdges;
+  }
+  .GridLines line:first-child {
+    stroke-opacity: 0;
+  }
+  .Legends ul {
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
+  }
+  .Legends ul li {
+    padding: 1em 1em .2em;
+    line-height: 1.2;
+    display: inline-block;
+  }
+  .Legends li > :first-child, .Legends li > :last-child {
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 5px;
+  }
+  .Legends li > :last-child {
+    margin-right: 0;
+    color: #555;
+  }
+  .Legends.Right {
+    width: 150px;
+    vertical-align: top;
+    display: inline-block;
+  }
+  .Legends.Right ul {
+    margin-top: 0;
+  }
+  .Legends.Right ul li {
+    text-align: left;
+    padding: 10px 0;
+    display: block;
+  }
+  .Legends.Right li > :first-child {
+    margin-right: 0;
+    width: 35px;
+  }
+  .Legends.Right li > :last-child {
+    width: calc(100% - 35px)
+  }
+  .Legends li line {
+    stroke-width: 2.5px;
+  }
+
+
+
+</style>
+</head>
+<body>
+
+<div class="ChartBox"></div>
+
+<script src="../js/jquery.js"></script>
+<script src="../js/d3.v3.min.js"></script>
+<script>
+
+	var margin = {top: 20, right: 20, bottom: 50, left: 60},
+      width = 960 - margin.left - margin.right,
+      height = 500 - margin.top - margin.bottom;
+
+/* 
+ * value accessor - returns the value to encode for a given data object.
+ * scale - maps value to a visual display encoding, such as a pixel position.
+ * map function - maps from data value to display value
+ * axis - sets up axis
+ */ 
+
+// setup x 
+var xValue = function(d) { return d.Calories;}, // data -> value
+    xScale = d3.scale.linear().range([0, width]), // value -> display
+    xMap = function(d) { return xScale(xValue(d));}, // data -> display
+    xAxis = d3.svg.axis().scale(xScale).orient("bottom");
+  
+// setup y
+var yValue = function(d) { return d["Protein (g)"];}, // data -> value
+    yScale = d3.scale.linear().range([height, 0]), // value -> display
+    yMap = function(d) { return yScale(yValue(d));}, // data -> display
+    yAxis = d3.svg.axis().scale(yScale).orient("left");
+
+// setup fill color
+var cValue = function(d) { return d.Manufacturer },
+    color = d3.scale.category20c();
+
+// add the graph canvas to the body of the webpage
+var svg = d3.select(".ChartBox").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+// add the tooltip area to the webpage
+var tooltip = d3.select(".ChartBox").append("div")
+    .attr("class", "tooltip")
+    .style("opacity", 0);
+
+// load data
+d3.csv("data.csv", function(error, data) {
+
+  // change string (from CSV) into number format
+  data.forEach(function(d) {
+    d.Calories = +d.Calories;
+    d["Protein (g)"] = +d["Protein (g)"];
+    console.log(d);
+  });
+
+  // don't want dots overlapping axis, so add in buffer to data domain
+  xScale.domain([d3.min(data, xValue)-1, d3.max(data, xValue)+1]);
+  yScale.domain([d3.min(data, yValue)-1, d3.max(data, yValue)+1]);
+
+  // x-axis
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis)
+    .append("text")
+      .attr("class", "Label")
+      .attr("x", width)
+      .attr("y", margin.bottom - 2)
+      .style("text-anchor", "end")
+      .text("Calories");
+
+  // y-axis
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+    .append("text")
+      .attr("class", "Label")
+      .attr("transform", "rotate(-90)")
+      .attr("y", -margin.left + 20)
+      .style("text-anchor", "end")
+      .text("Protein (g)");
+
+  svg.append('g')
+    .attr('class','GridLines')
+    .selectAll('.GridLines line')
+    .data(yScale.ticks(10))
+    .enter().append('line')
+    .attr('class','Line')
+    .attr('x2', width)
+    .attr('y1', yScale)
+    .attr('y2', yScale);
+
+  svg.append('g')
+    .attr('class','GridLines')
+    .selectAll('.GridLines line')
+    .data(xScale.ticks(10))
+    .enter().append('line')
+    .attr('class','Line')
+    .attr('y1', 0)
+    .attr('y2', height)
+    .attr('x1', xScale)
+    .attr('x2', xScale)
+
+
+  // draw dots
+  svg.selectAll(".dot")
+      .data(data)
+    .enter().append("circle")
+      .attr("class", "dot")
+      .attr("r", 5)
+      .attr("cx", xMap)
+      .attr("cy", yMap)
+      .style("fill", function(d){ return color(cValue(d)) })
+      .on("mouseover", function(d) {
+          tooltip.transition()
+               .duration(500)
+               .style("opacity", 1);
+          d3.select(this)
+            .transition()
+            .duration(500)
+            .attr('r',20)
+
+          tooltip.html(d["Cereal Name"] + " (" + xValue(d) + ", " + yValue(d) + ")");
+
+          var vTooltipW = $('.tooltip').innerWidth(),
+              vTooltipH = $('.tooltip').innerHeight(),
+              vChartBoxW = $('.ChartBox').innerWidth(),
+              vChartBoxH = $('.ChartBox').innerHeight(),
+              vDotPosL = $(this).offset().left,
+              vDotPosT = $(this).offset().top,
+              vChartBoxL = $('.ChartBox').offset().left,
+              vChartBoxT = $('.ChartBox').offset().top,
+              vDotR = parseInt(d3.select(this).attr('r'));
+
+              console.log('vDotR: '+vDotR*2);
+
+          tooltip.style("left", ((vDotPosL - vChartBoxL) + 30) + "px")
+               .style("top", (vDotPosT - vChartBoxT) - ((vTooltipH - vDotR*2)/2) + "px");
+
+          if(((vChartBoxL+vChartBoxW) - vDotPosL) <= vTooltipW ){
+              tooltip.style('left', (vDotPosL-vChartBoxL) - (vTooltipW + 15) + 'px')
+                $('.tooltip').addClass('right');
+          }
+
+      })
+      .on("mouseout", function(d) {
+          $('.tooltip').removeClass('right');
+          tooltip.style("opacity", 0);
+          d3.select(this)
+            .transition()
+            .duration(500)
+            .attr('r',5)
+      });
+
+      /*============= Legends ==============*/
+      var legends = d3.select('.ChartBox').append('div')
+        .attr('class','Legends') // ====== if legends right side add class name 'Right'
+        //.classed('Right',true)
+        .style('width', width + 'px')
+        .style('margin','0 auto')
+        .append('ul');
+      var legend = legends.selectAll('.Legend')
+        .data(color.domain())
+        .enter().append('li')
+        .attr('class','Legend');
+      legend.append('svg')
+        .attr('width', 25)
+        .attr('height', 10)
+        .append('line')
+        .attr('x1', 0)
+        .attr('x2', 25)
+        .attr('y1', 5)
+        .attr('y2', 5)
+        .attr('stroke',color)
+      legend.append('span')
+        .text(function(d){ return d });
+      /* ========== End Legends ========= */
+
+});
+
+</script>
+</body>
+</html>

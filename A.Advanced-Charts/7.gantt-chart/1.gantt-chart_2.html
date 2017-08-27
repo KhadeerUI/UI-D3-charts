@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+  background: rgba(0,0,0,.1);
+  font: 12px/1.4 arial;
+  text-align: center;
+  list-style-position: inside;
+  color: #333;
+}
+text {
+  fill: #555;
+}
+.ChartBox {
+    padding: 1em;
+    display: inline-block;
+    background: #fff;
+    box-shadow: 0 2px 3px rgba(0,0,0,.1);
+    border-radius: 3px;
+}
+.axis path, .axis line {
+      fill: none;
+      stroke: rgba(0,0,0,.2);
+      shape-rendering: crispEdges;
+  }
+  .GridLines line, .AxisGrid line {
+    stroke: rgba(0,0,0,.05);
+    shape-rendering: crispEdges;
+  }
+  .Tooltip {
+    line-height: 1;
+    padding: 10px 15px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #eee;
+    border-radius: 3px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  }
+  /* Creates a small triangle extender for the tooltip */
+  .Tooltip:after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    border: 6px solid transparent;
+    border-top-color: rgba(0,0,0,.8);
+    margin-left: -6px;
+  }
+  .box line,
+  .box rect,
+  .box circle {
+    fill: steelblue;
+    stroke: #000;
+    stroke-width: 1px;
+  }
+  /* .bar {
+    fill: #33b5e5;
+  }
+  .bar-failed {
+    fill: #CC0000;
+  }
+  .bar-running {
+    fill: #669900;
+  } 
+  .bar-succeeded {
+    fill: #33b5e5;
+  }
+  .bar-killed {
+    fill: #ffbb33;
+  } */
+
+  .Legends ul {
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
+  }
+  .Legends ul li {
+    padding: 1em 1em .2em;
+    line-height: 1.2;
+    display: inline-block;
+  }
+  .Legends li > :first-child, .Legends li > :last-child {
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 5px;
+  }
+  .Legends li > :last-child {
+    margin-right: 0;
+    color: #555;
+  }
+  .Legends.Right {
+    width: 150px;
+    vertical-align: top;
+    display: inline-block;
+  }
+  .Legends.Right ul {
+    margin-top: 0;
+  }
+  .Legends.Right ul li {
+    text-align: left;
+    padding: 10px 0;
+    display: block;
+  }
+  .Legends.Right li > :first-child {
+    margin-right: 0;
+    width: 35px;
+  }
+  .Legends.Right li > :last-child {
+    width: calc(100% - 35px)
+  }
+  .Legends li line {
+    stroke-width: 2.5px;
+  }
+
+
+</style>
+</head>
+<body>
+
+<div class="ChartBox"></div>
+
+<script src="../../js/jquery.js"></script>
+<script src="../../js/d3.v3.min.js"></script>
+<script src="js/gantt-chart-d3v2.0_2.js"></script>
+<script>
+
+	var tasks = [
+  {"startDate":new Date("Sun Dec 09 01:36:45 EST 2012"),"endDate":new Date("Sun Dec 09 02:36:45 EST 2012"),"taskName":"E Job","status":"RUNNING"},
+  {"startDate":new Date("Sun Dec 09 04:56:32 EST 2012"),"endDate":new Date("Sun Dec 09 06:35:47 EST 2012"),"taskName":"A Job","status":"RUNNING"},
+  {"startDate":new Date("Sun Dec 09 06:29:53 EST 2012"),"endDate":new Date("Sun Dec 09 06:34:04 EST 2012"),"taskName":"D Job","status":"RUNNING"},
+  {"startDate":new Date("Sun Dec 09 05:35:21 EST 2012"),"endDate":new Date("Sun Dec 09 06:21:22 EST 2012"),"taskName":"P Job","status":"RUNNING"},
+  {"startDate":new Date("Sun Dec 09 05:00:06 EST 2012"),"endDate":new Date("Sun Dec 09 05:05:07 EST 2012"),"taskName":"D Job","status":"RUNNING"},
+  {"startDate":new Date("Sun Dec 09 03:46:59 EST 2012"),"endDate":new Date("Sun Dec 09 04:54:19 EST 2012"),"taskName":"P Job","status":"RUNNING"},
+  {"startDate":new Date("Sun Dec 09 04:02:45 EST 2012"),"endDate":new Date("Sun Dec 09 04:48:56 EST 2012"),"taskName":"N Job","status":"RUNNING"},
+  {"startDate":new Date("Sun Dec 09 03:27:35 EST 2012"),"endDate":new Date("Sun Dec 09 03:58:43 EST 2012"),"taskName":"E Job","status":"SUCCEEDED"},
+  {"startDate":new Date("Sun Dec 09 01:40:11 EST 2012"),"endDate":new Date("Sun Dec 09 03:26:35 EST 2012"),"taskName":"A Job","status":"SUCCEEDED"},
+  {"startDate":new Date("Sun Dec 09 03:00:03 EST 2012"),"endDate":new Date("Sun Dec 09 03:09:51 EST 2012"),"taskName":"D Job","status":"SUCCEEDED"},
+  {"startDate":new Date("Sun Dec 09 01:21:00 EST 2012"),"endDate":new Date("Sun Dec 09 02:51:42 EST 2012"),"taskName":"P Job","status":"SUCCEEDED"},
+  {"startDate":new Date("Sun Dec 09 01:08:42 EST 2012"),"endDate":new Date("Sun Dec 09 01:33:42 EST 2012"),"taskName":"N Job","status":"FAILED"},
+  {"startDate":new Date("Sun Dec 09 00:27:15 EST 2012"),"endDate":new Date("Sun Dec 09 00:54:56 EST 2012"),"taskName":"E Job","status":"SUCCEEDED"},
+  {"startDate":new Date("Sun Dec 09 00:29:48 EST 2012"),"endDate":new Date("Sun Dec 09 00:44:50 EST 2012"),"taskName":"D Job","status":"SUCCEEDED"},
+  {"startDate":new Date("Sun Dec 09 07:39:21 EST 2012"),"endDate":new Date("Sun Dec 09 07:43:22 EST 2012"),"taskName":"P Job","status":"RUNNING"},
+  {"startDate":new Date("Sun Dec 09 07:00:06 EST 2012"),"endDate":new Date("Sun Dec 09 07:05:07 EST 2012"),"taskName":"D Job","status":"RUNNING"},
+  {"startDate":new Date("Sun Dec 09 08:46:59 EST 2012"),"endDate":new Date("Sun Dec 09 09:54:19 EST 2012"),"taskName":"P Job","status":"RUNNING"},
+  {"startDate":new Date("Sun Dec 09 09:02:45 EST 2012"),"endDate":new Date("Sun Dec 09 09:48:56 EST 2012"),"taskName":"N Job","status":"RUNNING"},
+  {"startDate":new Date("Sun Dec 09 08:27:35 EST 2012"),"endDate":new Date("Sun Dec 09 08:58:43 EST 2012"),"taskName":"E Job","status":"SUCCEEDED"},
+  {"startDate":new Date("Sun Dec 09 08:40:11 EST 2012"),"endDate":new Date("Sun Dec 09 08:46:35 EST 2012"),"taskName":"A Job","status":"SUCCEEDED"},
+  {"startDate":new Date("Sun Dec 09 08:00:03 EST 2012"),"endDate":new Date("Sun Dec 09 08:09:51 EST 2012"),"taskName":"D Job","status":"SUCCEEDED"},
+  {"startDate":new Date("Sun Dec 09 10:21:00 EST 2012"),"endDate":new Date("Sun Dec 09 10:51:42 EST 2012"),"taskName":"P Job","status":"SUCCEEDED"},
+  {"startDate":new Date("Sun Dec 09 11:08:42 EST 2012"),"endDate":new Date("Sun Dec 09 11:33:42 EST 2012"),"taskName":"N Job","status":"FAILED"},
+  {"startDate":new Date("Sun Dec 09 12:27:15 EST 2012"),"endDate":new Date("Sun Dec 09 12:54:56 EST 2012"),"taskName":"E Job","status":"SUCCEEDED"},
+  {"startDate":new Date("Sat Dec 08 23:12:24 EST 2012"),"endDate":new Date("Sun Dec 09 00:26:13 EST 2012"),"taskName":"A Job","status":"KILLED"}];
+
+  var taskStatus = {
+      "SUCCEEDED" : "bar",
+      "FAILED" : "bar-failed",
+      "RUNNING" : "bar-running",
+      "KILLED" : "bar-killed"
+  };
+
+  var taskNames = [ "D Job", "P Job", "E Job", "A Job", "N Job" ];
+
+  tasks.sort(function(a, b) {
+      return a.endDate - b.endDate;
+  });
+  var maxDate = tasks[tasks.length - 1].endDate;
+  tasks.sort(function(a, b) {
+      return a.startDate - b.startDate;
+  });
+  var minDate = tasks[0].startDate;
+
+  var format = "%H:%M";
+
+  var gantt = d3.gantt().taskTypes(taskNames).taskStatus(taskStatus).tickFormat(format);
+  gantt(tasks);
+
+</script>
+</body>
+</html>

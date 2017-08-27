@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+	background: rgba(0,0,0,.1);
+	font: 12px/1.4 arial;
+	text-align: center;
+	list-style-position: inside;
+	color: #333;
+}
+text {
+	fill: #555;
+}
+.ChartBox {
+    padding: 1em;
+    display: inline-block;
+    background: #fff;
+    box-shadow: 0 2px 3px rgba(0,0,0,.1);
+    border-radius: 3px;
+    position: relative;
+}
+.axis path, .axis line {
+	fill: none;
+	stroke: rgba(0,0,0,.2);
+	shape-rendering: crispEdges;
+}
+.GridLines line {
+    stroke: rgba(0,0,0,.05);
+}
+.Tooltip {
+    line-height: 1;
+    padding: 10px 15px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #eee;
+    border-radius: 3px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    position: absolute;
+    white-space: nowrap;
+}
+.Tooltip:after {
+	content: '';
+	position: absolute;
+	right: 100%;
+	top: 50%;
+	border: 5px solid transparent;
+	border-right-color: rgba(0,0,0,.8);
+	margin-top: -5px;
+}
+.Tooltip.Right:after {
+	right: auto;
+	left: 100%;
+	border-right-color: transparent;
+	border-left-color: rgba(0,0,0,.8);
+}
+.Legends ul {
+	margin: 0;
+	padding: 0;
+	list-style-type: none;
+}
+.Legends ul li {
+	padding: 1em 1em .2em;
+	line-height: 1.2;
+	display: inline-block;
+}
+.Legends li > :first-child, .Legends li > :last-child {
+	display: inline-block;
+	vertical-align: middle;
+	margin-right: 5px;
+}
+.Legends li > :last-child {
+	margin-right: 0;
+	color: #555;
+}
+.Legends.Right {
+	width: 150px;
+	vertical-align: top;
+	display: inline-block;
+}
+.Legends.Right ul {
+	margin-top: 0;
+}
+.Legends.Right ul li {
+	text-align: left;
+	padding: 10px 0;
+	display: block;
+}
+.Legends.Right li > :first-child {
+	margin-right: 0;
+	width: 35px;
+}
+.Legends.Right li > :last-child {
+  	width: calc(100% - 35px)
+}
+.Legends li line {
+  	stroke-width: 2.5px;
+}
+.Cont {
+    display: block;
+    background: #fff;
+    padding: 1em;
+    font-size: 15px;
+    text-align: left;
+    margin: 1em;
+}
+
+
+</style>
+</head>
+<body>
+
+<div class="ChartBox"></div>
+<div class="Cont">
+	<h2>List of Changes</h2>
+	<ol>
+		<li>Added Y axis grid lines in the chart background</li>
+		<li>Added x and y axis labels</li>
+		<li>Added legend</li>
+	</ol>
+</div>
+
+<script src="../../js/jquery.js"></script>
+<script src="../../js/d3.v3.min.js"></script>
+<script>
+
+	var margin = {top: 20, right: 20, bottom: 50, left: 60},
+	    width = 800 - margin.left - margin.right,
+	    height = 400 - margin.top - margin.bottom;
+
+	var x = d3.scale.linear()
+	    .range([0, width]);
+
+	var y = d3.scale.linear()
+	    .range([height, 0]);
+
+	// var color = d3.scale.category20c();
+
+	var color = d3.scale.ordinal()
+		.range(['#05c','#ccc','#d3553d'])
+
+	var xAxis = d3.svg.axis()
+	    .scale(x)
+	    .orient("bottom");
+
+	var yAxis = d3.svg.axis()
+	    .scale(y)
+	    .orient("left");
+
+	var xAxisGrid = d3.svg.axis()
+		.scale(x)
+		.orient('bottom')
+		.tickSize(height,0)
+		.tickFormat('');
+
+	var yAxisGrid = d3.svg.axis()
+		.scale(y)
+		.orient('left')
+		.tickSize(-width,0)
+		.tickFormat('');
+
+	var svg = d3.select(".ChartBox").append("svg")
+	    .attr("width", width + margin.left + margin.right)
+	    .attr("height", height + margin.top + margin.bottom)
+	  .append("g")
+	    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+	d3.tsv("data.tsv", function(error, data) {
+	  	if (error) throw error;
+
+	  	data.forEach(function(d) {
+	    	d.sepalLength = +d.sepalLength;
+		    d.sepalWidth = +d.sepalWidth;
+	  	});
+
+	  	x.domain(d3.extent(data, function(d) { return d.sepalWidth; })).nice();
+	  	y.domain(d3.extent(data, function(d) { return d.sepalLength; })).nice();
+
+	  	svg.append("g")
+	      .attr("class", "x axis")
+	      .attr("transform", "translate(0," + height + ")")
+	      .call(xAxis);
+
+	  	svg.append("g")
+	      .attr("class", "y axis")
+	      .call(yAxis);
+
+	   	svg.append('g').attr('class','xLabel');
+	   	svg.append('g').attr('class','yLabel');
+
+	   	svg.select('.xLabel')
+	   		.attr('transform','translate('+ width +','+ (height+margin.bottom-2) +')')
+	   		.append('text')
+	   		.text('Sepal Width (cm)')
+	   		.style('text-anchor','end');
+
+	   	svg.select('.yLabel')
+	   		.attr('transform','translate('+ (-margin.left+20) +',0)')
+	   		.append('text')
+	   		.text('Sepal Length (cm)')
+	   		.attr('transform','rotate(-90)')
+	   		.style('text-anchor','end');
+
+	   	svg.append('g')
+	   		.attr('class','GridLines x')
+	   		.call(xAxisGrid);
+
+	   	svg.append('g')
+	   		.attr('class','GridLines y')
+	   		.call(yAxisGrid);
+
+	  	svg.selectAll(".dot")
+	      .data(data)
+	    .enter().append("circle")
+	      .attr("class", "dot")
+	      .attr("r", 4)
+	      .attr("cx", function(d) { return x(d.sepalWidth); })
+	      .attr("cy", function(d) { return y(d.sepalLength); })
+	      .style("fill", function(d) { return color(d.species); });
+
+	  	svg.selectAll('.dot').on('mouseover',function(d){
+	  		d3.select(this)
+	  			.transition()
+	  			.duration(200)
+	  			.attr('r',15)
+
+	  		var tooltip = d3.select('.ChartBox').append('div')
+            	.attr('class','Tooltip');
+          	tooltip.style('opacity',0);
+          	tooltip.transition()
+              	.duration(500)
+              	.style('opacity',1);
+          	tooltip.html( '<b>'+ d.species +'</b>' + ' X: ' + d.sepalWidth + ' and Y: ' + d.sepalLength )
+
+          	var circleRadius = d3.select(this).attr('r'),
+          		circleWidth = ($(this)[0].getBBox().width),
+	          	tooltipHeight = $('.Tooltip').innerHeight(),
+	          	tooltipWidth = $('.Tooltip').innerWidth(),
+	          	thisoffsetLeft = $(this).offset().left,
+	          	thisoffsetTop = $(this).offset().top,
+	          	boxWidth = $('.ChartBox').innerWidth(),
+	          	boxHeight = $('.ChartBox').innerHeight(),
+	          	boxoffsetLeft = $('.ChartBox').offset().left,
+	          	boxoffsetTop = $('.ChartBox').offset().top;
+
+          tooltip.style({
+            left: (thisoffsetLeft - boxoffsetLeft + 30) +'px',
+            top: (thisoffsetTop - boxoffsetTop - ((tooltipHeight - circleWidth)/2)) +'px'
+          })
+          if( (boxWidth/2) <= (thisoffsetLeft - boxoffsetLeft)){
+      		$('.Tooltip').addClass('Right');
+      		tooltip.style({
+	            left: (thisoffsetLeft - boxoffsetLeft - (tooltipWidth+20)) +'px'
+         	})
+          }
+	  	})
+	  	svg.selectAll('.dot').on('mouseout',function(d){
+	  		d3.select(this)
+	  			.transition()
+	  			.duration(500)
+	  			.attr('r',5);
+
+	  		d3.select('.Tooltip').remove();
+	  	})
+
+
+	  /*============= Legends ==============*/
+	    var legends = d3.select('.ChartBox').append('div')
+	      .attr('class','Legends') // ====== if legends right side add class name 'Right'
+	      //.classed('Right',true)
+	      .style('width', width + 'px')
+	      .style('margin','0 auto')
+	      .append('ul');
+	    var legend = legends.selectAll('.Legend')
+	      .data(color.domain())
+	      .enter().append('li')
+	      .attr('class','Legend');
+	    legend.append('svg')
+	      .attr('width', 25)
+	      .attr('height', 10)
+	      .append('line')
+	      .attr('x1', 0)
+	      .attr('x2', 25)
+	      .attr('y1', 5)
+	      .attr('y2', 5)
+	      .attr('stroke',color)
+	    legend.append('span')
+	      .text(function(d){ return d });
+	    /* ========== End Legends ========= */
+
+
+	});
+
+</script>
+</body>
+</html>

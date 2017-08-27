@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+  background: rgba(0,0,0,.1);
+  font: 12px/1.4 arial;
+  text-align: center;
+  list-style-position: inside;
+  color: #333;
+}
+text {
+  fill: #555;
+}
+.ChartBox {
+    padding: 1em;
+    display: inline-block;
+    background: #fff;
+    box-shadow: 0 2px 3px rgba(0,0,0,.1);
+    border-radius: 3px;
+}
+.axis path, .axis line {
+      fill: none;
+      stroke: rgba(0,0,0,.2);
+      shape-rendering: geometricPrecision;
+  }
+  .y.axis line {
+    stroke: #f2f2f2;
+  }
+  .d3-tip {
+    line-height: 1;
+    padding: 10px 15px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #eee;
+    border-radius: 3px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  }
+  /* Creates a small triangle extender for the tooltip */
+  .d3-tip:after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    border: 6px solid transparent;
+    border-top-color: rgba(0,0,0,.8);
+    margin-left: -6px;
+  }
+.line {
+    fill: none;
+    stroke: #ccc;
+    stroke-width: 1.5px;
+  }
+
+
+</style>
+</head>
+<body>
+
+<div class="ChartBox"></div>
+
+<script src="../../js/jquery.js"></script>
+<script src="../../js/d3.v3.min.js"></script>
+<script src="../../js/d3-layout-cloud.js"></script>
+<script>
+
+	var m = {top: 50, right: 50, bottom: 50, left: 50}
+	  , h = 500 - m.top - m.bottom
+	  , w = 960 - m.left - m.right
+	  , barWidth = 5;
+
+	var dataset = null;
+
+	d3.csv("data.csv",function(error,data){
+	  if (error) return console.log(error);
+
+	  //typecast Amount to #, calculate total, and cumulative amounts
+	  var totalAmount = 0;
+	  for(var i = 0; i < data.length; i++){
+	    data[i].Amount = +data[i].Amount;
+	    totalAmount += data[i].Amount;
+	    if(i > 0){
+	      data[i]['CumulativeAmount'] = data[i].Amount + data[i-1].CumulativeAmount;
+	    }else{
+	      data[i]['CumulativeAmount'] = data[i].Amount;
+	    }
+	  }
+	  //now calculate cumulative % from the cumulative amounts & total, round %
+	  for(var i = 0; i < data.length; i++){
+	    data[i]['CumulativePercentage'] = (data[i]['CumulativeAmount'] / totalAmount);
+	    data[i]['CumulativePercentage'] = parseFloat(data[i]['CumulativePercentage'].toFixed(2));
+	  }
+
+	  dataset = data;
+
+	  //Axes and scales
+	  var xScale = d3.scale.ordinal().rangeRoundBands([0, w], 0.1);
+	  xScale.domain(data.map(function(d) { return d.Category; }));
+
+	  var yhist = d3.scale.linear()
+	                  .domain([0, d3.max(data, function(d) { return d.Amount; })])
+	                  .range([h, 0]);
+
+	  var ycum = d3.scale.linear().domain([0, 1]).range([h, 0]);
+
+	  var xAxis = d3.svg.axis()
+	                .scale(xScale)
+	                .orient('bottom');
+
+	  var yAxis = d3.svg.axis()
+	                .scale(yhist)
+	                .orient('left');
+
+	  var yAxis2 = d3.svg.axis()
+	                 .scale(ycum)
+	                 .orient('right');
+
+	  //Draw svg
+	  var svg = d3.select(".ChartBox").append("svg")
+	              .attr("width", w + m.left + m.right)
+	              .attr("height", h + m.top + m.bottom)
+	              .append("g")
+	              .attr("transform", "translate(" + m.left + "," + m.top + ")");
+
+	  //Draw histogram
+	  var bar = svg.selectAll(".bar")
+	                .data(data)
+	                .enter().append("g")
+	                .attr("class", "bar")
+	                .attr('fill','#05c');
+
+	  bar.append("rect")
+	      .attr("x", function(d) { return xScale(d.Category); })
+	      .attr("width", xScale.rangeBand())
+	      .attr("y", function(d) { return yhist(d.Amount); })
+	      .attr("height", function(d) { return h - yhist(d.Amount); });
+
+	  //Draw CDF line
+	  var guide = d3.svg.line()
+	                .x(function(d) { return xScale(d.Category); })
+	                .y(function(d){ return ycum(d.CumulativePercentage) })
+	                .interpolate('basis');
+
+	  var line = svg.append('path')
+	                .datum(data)
+	                .attr('d', guide)
+	                .attr('class', 'line');
+
+	  //Draw axes
+	  svg.append("g")
+	      .attr("class", "x axis")
+	      .attr("transform", "translate(0," + h + ")")
+	      .call(xAxis);
+
+	  svg.append("g")
+	      .attr("class", "y axis")
+	      .call(yAxis)
+	      .append("text")
+	      .attr("transform", "rotate(-90)")
+	      .attr("y", 6)
+	      .attr("dy", ".71em")
+	      .style("text-anchor", "end")
+	      .text("Amount");
+
+	  svg.append("g")
+	      .attr("class", "y axis")
+	      .attr("transform", "translate(" + [w, 0] + ")")
+	      .call(yAxis2)
+	      .append("text")
+	      .attr("transform", "rotate(-90)")
+	      .attr("y", 4)
+	      .attr("dy", "-.71em")
+	      .style("text-anchor", "end")
+	      .text("Cumulative %");
+	});
+
+</script>
+</body>
+</html>

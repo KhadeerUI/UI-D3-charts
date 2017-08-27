@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>D3 JS</title>
+		<style>
+
+		*,*:before,*:after {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+		body {
+		  font: 14px/1.4 segoe ui;
+		  background: #e5e5e5;
+		  text-align: center;
+		}
+		svg {
+			font-size: 10px;
+		}
+		.axis path,
+		.axis line {
+		  fill: none;
+		  stroke: rgba(0,0,0,.2);
+		  shape-rendering: geometricPrecision;
+		}
+
+		.axis--x path {
+		  display: none;
+		}
+
+		.line {
+		  fill: none;
+		  stroke: #05c;
+		  stroke-width: 3px;
+		  //display: none;
+		}
+		.CircleG circle {
+			fill: #fff;
+			stroke: #05c;
+			stroke-width: 2px;
+
+		}
+		div.tooltip {	
+		    position: absolute;			
+		    text-align: center;			
+		    padding: 10px 1em;			
+		    background: rgba(0,0,0,.8);
+		    color: #eee;
+		    box-shadow: 0 0 3px rgba(0,0,0,.3);
+		    border: 0px;		
+		    border-radius: 3px;			
+		    pointer-events: none;
+		    font-size: 12px;		
+		}
+		div.tooltip:after {
+			content: '';
+		    position: absolute;
+		    bottom: -12px;
+		    left: 50%;
+		    margin-left: -5px;
+		    border: 6px solid transparent;
+		    border-top-color: rgba(0,0,0,.8);
+		}
+		div.tooltip .Text {
+			display: block;
+		}
+		div.tooltip.top:after {
+			bottom: 100%;
+			border-top-color: transparent;
+			border-bottom-color: rgba(0,0,0,.8);
+		}
+		div.tooltip.left:after {
+			left: 20px;
+		}
+		div.tooltip.right:after {
+			left: auto;
+			right: 20px;
+		}
+		.ChartBox {
+			background: #fff;
+			box-shadow: 0 2px 3px rgba(0,0,0,.1);
+			padding: 1em;
+			border-radius: 3px;
+			display: inline-block;
+			width: 50%;
+			position: relative;
+		}
+		.grid .tick {
+			stroke: rgba(0,0,0,.05);
+			shape-rendering: geometricPrecision;
+		}
+		.ChartBox svg {
+			width: 100%;
+			height: 100%;
+		}
+		@media (max-width:768px){
+			.ChartBox {
+				display: block;
+				width: 100%;
+			}
+		}
+
+		</style>
+	</head>
+	<body>
+
+	<!-- <button class="start">Animation</button>
+	<button class="reset">Reset</button> -->
+
+		<div class="ChartBox"></div>
+
+		<script src="../js/jquery.js"></script>
+		<script src="../js/d3.v3.min.js"></script>
+		
+		<script>
+
+			var margin = 40,
+			    width = 700,
+			    height = 400;
+
+			var xScale = d3.time.scale()
+			    .range([0, width])
+			    .nice(d3.time.year);
+
+			var yScale = d3.scale.linear()
+			    .range([height, 0])
+			    .nice();
+
+			var xAxis = d3.svg.axis()
+			    .scale(xScale)
+			    .orient("bottom");
+
+			var yAxis = d3.svg.axis()
+			    .scale(yScale)
+			    .orient("left");
+
+			var line = d3.svg.line()
+			    .x(function(d) { return xScale(d.date); })
+			    .y(function(d) { return yScale(d.close); });
+
+			var svg = d3.select(".ChartBox").append('svg')
+			    .attr("width", width)
+			    .attr("height", height)
+			  .append("g")
+			    .attr("transform", "translate(" + margin + "," + margin + ")");
+
+			d3.csv("amzn.csv", function(error, data) {
+			  data.forEach(function(d) {
+			    d.date = d3.time.format("%Y-%m-%d").parse(d.date);
+			    d.close = +d.close;
+			  });
+
+			  xScale.domain(d3.extent(data, function(d) { return d.date; }));
+			  yScale.domain(d3.extent(data, function(d) { return d.close; }));
+
+			  svg.append("g")
+			      .attr("class", "x axis")
+			      .attr("transform", "translate(0," + height + ")")
+			      .call(xAxis);
+
+			  svg.append("g")
+			      .attr("class", "y axis")
+			      .call(yAxis)
+			    .append("text")
+			      .attr("transform", "rotate(-90)")
+			      .attr("y", 6)
+			      .attr("dy", ".71em")
+			      .style("text-anchor", "end")
+			      .text("Price ($)");
+
+			  svg.append("path")
+			      .datum(data)
+			      .attr("class", "line")
+			      .attr("d", line);
+
+			  d3.select(window).on('resize', resize); 
+
+			  function resize() {
+			    var width = parseInt(d3.select("svg").style("width")) - margin*2,
+			    	height = parseInt(d3.select("svg").style("height")) - margin*2;
+
+			    /* Update the range of the scale with new width/height */
+			    xScale.range([0, width]).nice(d3.time.year);
+			    yScale.range([height, 0]).nice();
+
+			    /* Update the axis with the new scale */
+			    svg.select('.x.axis')
+			      .attr("transform", "translate(0," + height + ")")
+			      .call(xAxis);
+
+			    svg.select('.y.axis')
+			      .call(yAxis);
+
+			    /* Force D3 to recalculate and update the line */
+			    svg.selectAll('.line')
+			      .attr("d", line);
+
+			    xAxis.ticks(Math.max(width/50));
+  				yAxis.ticks(Math.max(height/50));
+			  }
+
+			  
+			  resize();
+			});
+
+		</script>
+	</body>
+</html>

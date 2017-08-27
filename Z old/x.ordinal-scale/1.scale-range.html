@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>D3 Js</title>
+	<style>
+		body {
+			font: 10px Segoe UI;
+			background: rgba(0,0,0,.1);
+			text-align: center;
+		}
+		.ChartBox {
+			background: #fff;
+			padding: 1em;
+			display: inline-block;
+			border-radius: 3px;
+			box-shadow: 0 2px 3px rgba(0,0,0,.2);
+		}
+	</style>
+</head>
+<body>
+	
+	<div class="ChartBox"></div>
+
+	<script src="../js/d3.v3.min.js"></script>
+	<script>
+		
+		var margin = {'top':20, 'right':20, 'bottom':30, 'left':30},
+			width = 950 - margin.left - margin.right,
+			height = 600 - margin.top - margin.bottom ;
+
+		var svg = d3.select('.ChartBox').append('svg')
+					.attr('width', width + margin.left + margin.right)
+					.attr('height', height + margin.top + margin.bottom)
+					.append('g')
+					.attr('transform','translate('+ margin.left +',' + margin.top +')')
+
+		var data = d3.range(21)
+
+		var x = d3.scale.ordinal()
+					.domain(data)
+					.rangeRoundBands([0,width])
+
+		var colors1 = d3.scale.category10(),
+			colors2 = d3.scale.category20(),
+			colors3 = d3.scale.category20b(),
+			colors4 = d3.scale.category20c()
+
+		svg.append('g')
+		    .append("text")
+		      .attr('y', 10)
+		      .attr('dx','20px')
+		      .text("Color Scale Category 10")
+		      .style('font-size','14px')
+		      .style('text-anchor','start')
+
+		svg.append('g')
+			.selectAll('rect.example1')
+			.data(data)
+			.enter().append('rect')
+				.attr('class', 'Example1')
+				.style('fill', colors1)
+				.attr('x', function(d){ return x(d) })
+				.attr('y', 30)
+				.attr('width', x.rangeBand())
+				.attr('height', 50)
+
+		svg.append('g')
+		    .append("text")
+		      .attr("y", 130)
+		      .attr('dx','20px')
+		      .text("Color Scale Category 20")
+		      .style('font-size','14px')
+		      .style('text-anchor','start')
+
+		svg.append('g')
+			.selectAll('rect.example1')
+			.data(data)
+			.enter().append('rect')
+				.attr('class', 'Example1')
+				.style('fill', colors2)
+				.attr('x', function(d){ return x(d) })
+				.attr('y', 150)
+				.attr('width', x.rangeBand())
+				.attr('height', 50)
+
+		svg.append('g')
+		    .append("text")
+		      .attr("y", 260)
+		      .attr('dx','20px')
+		      .text("Color Scale Category 20b")
+		      .style('font-size','14px')
+		      .style('text-anchor','start')
+
+		svg.append('g')
+			.selectAll('rect.example1')
+			.data(data)
+			.enter().append('rect')
+				.attr('class', 'Example1')
+				.style('fill', colors3)
+				.attr('x', function(d){ return x(d) })
+				.attr('y', 280)
+				.attr('width', x.rangeBand())
+				.attr('height', 50)
+
+		svg.append('g')
+		    .append("text")
+		      .attr("y", 380)
+		      .attr('dx','20px')
+		      .text("Color Scale Category 20c")
+		      .style('font-size','14px')
+		      .style('text-anchor','start')
+
+		svg.append('g')
+			.selectAll('rect.example1')
+			.data(data)
+			.enter().append('rect')
+				.attr('class', 'Example1')
+				.style('fill', colors4)
+				.attr('x', function(d){ return x(d) })
+				.attr('y', 400)
+				.attr('width', x.rangeBand())
+				.attr('height', 50)
+
+		var x = d3.scale.ordinal()
+					.domain(data)
+					.rangeBands([0,width]);
+
+		svg.append('g')
+			.selectAll('rect.example2')
+			.data(data)
+			.enter().append('rect')
+					.attr('class','Example2')
+					.style('fill',colors1)
+					.attr('x',function(d){ return Math.round(x(d)) })
+					.attr('y',500)
+					.attr('width', Math.round(x.rangeBand()))
+					.attr('height',50)
+			
+
+
+		d3.select(".ChartBox").selectAll()
+					.data(data)
+					.enter()
+					.append('li')
+					.insert("div")
+					.text(function(d) {return d;})
+					.attr('style', function(d, i) {return "background-color:"+'lightblue'});
+					
+
+
+	</script>
+</body>
+</html>

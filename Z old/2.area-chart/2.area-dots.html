@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>D3 JS</title>
+		<style>
+
+			body {
+			  font: 10px segoe ui;
+			  text-align: center;
+			  background: rgba(0,0,0,.1);
+			}
+
+			text.shadow {
+			  stroke: #fff;
+			  stroke-width: 3px;
+			}
+
+			path { 
+			    stroke: #05c;
+			    stroke-width: 2;
+			    fill: none;
+			}
+
+			.axis path,
+			.axis line {
+			    fill: none;
+			    stroke: rgba(0,0,0,.3);
+			    stroke-width: 0;
+			    shape-rendering: geometricPrecision;
+			}
+
+			.grid .tick {
+			    stroke: rgba(0,0,0,.05);
+			    shape-rendering: geometricPrecision;;
+			}
+			.grid path {
+			    stroke-width: 0;
+			}
+
+			.area {
+			    fill: rgba(0,85,204,.3);
+			    stroke-width: 0;
+			}
+			.CircleG circle {
+				stroke: #05c;
+				stroke-width: 1.5px;
+				fill: #fff;
+				transition: fill ease-in .2s;
+				-webkit-transition: fill ease-in .2s;
+				-ms-transition: fill ease-in .2s;
+			}
+			.CircleG circle:hover {
+				stroke-width: 2px;
+				fill: #05c;
+			}
+			div.Tooltip {	
+			    position: absolute;			
+			    text-align: center;			
+			    padding: 10px 1em;			
+			    background: rgba(0,0,0,.8);
+			    color: #eee;
+			    box-shadow: 0 0 3px rgba(0,0,0,.3);
+			    border: 0px;		
+			    border-radius: 3px;			
+			    pointer-events: none;
+			    font-size: 12px;	
+			}
+			div.Tooltip:after {
+				content: '';
+			    position: absolute;
+			    top: 100%;
+			    left: 50%;
+			    margin-left: -5px;
+			    border: 6px solid transparent;
+			    border-top-color: rgba(0,0,0,.8);
+			}
+			div.Tooltip.Top:after {
+				top: auto;
+				bottom: 100%;
+				border-top-color: transparent;
+				border-bottom-color: rgba(0,0,0,.8);
+			}
+			div.Tooltip.Right:after {
+				left: auto;
+				right: 10px;
+			}
+			div.Tooltip.Left:after {
+				left: 20px;
+			}
+			div.Tooltip.Right:after {
+				left: auto;
+				right: 20px;
+			}
+			div.Tooltip .Text {
+				display: block;
+			}
+			.ChartBox {
+				display: inline-block;
+				background: #fff;
+				box-shadow: 0 2px 2px rgba(0,0,0,0.1);
+				padding: 1em;
+				border-radius: 3px;
+				margin-top: 10em;
+			}
+
+
+		@media (max-width:640px) {
+			.svgRes {
+				width: auto;
+				height: auto;
+			}
+		}
+
+
+		</style>
+	</head>
+	<body>
+
+
+		<div class="ChartBox"></div>
+
+		<!-- <script src="js/d3.js"></script> -->
+		<script src="../js/jquery.js"></script>
+		<script src="http://d3js.org/d3.v3.min.js"></script>
+		<script>
+
+			var margin = {top: 30, right: 20, bottom: 35, left: 50},
+			    width = 600 - margin.left - margin.right,
+			    height = 270 - margin.top - margin.bottom;
+
+			var parseDate = d3.time.format("%d-%b-%y").parse;
+				bisectDate = d3.bisector(function(d) { return d.date; }).left,
+			    formatValue = d3.format(",.1f"),
+			    formatCurrency = function(d) { return formatValue(d) + "%"; };
+
+			var x = d3.time.scale().range([0, width]);
+			var y = d3.scale.linear().range([height, 0]);
+
+
+			var xAxis = d3.svg.axis()
+			    .scale(x)
+			    .orient("bottom")
+			    .ticks(3);
+
+			var yAxis = d3.svg.axis()
+			    .scale(y)
+			    .orient("left")
+			    .ticks(5);
+
+			var area = d3.svg.area()
+			    .x(function(d) { return x(d.date); })
+			    .y0(height)
+			    .y1(function(d) { return y(d.close); })
+
+			var valueline = d3.svg.line()
+			    .x(function(d) { return x(d.date); })
+			    .y(function(d) { return y(d.close); });
+			    
+			var svg = d3.select(".ChartBox")
+			    .append("svg")
+			        .attr("width", width + margin.left + margin.right)
+			        .attr("height", height + margin.top + margin.bottom)
+			    .append("g")
+			        .attr("transform", 
+			              "translate(" + margin.left + "," + margin.top + ")");
+
+			// function for the x grid lines
+			function make_x_axis() {
+			    return d3.svg.axis()
+			        .scale(x)
+			        .orient("bottom")
+			        .ticks(0)
+			}
+
+			// function for the y grid lines
+			function make_y_axis() {
+			  return d3.svg.axis()
+			      .scale(y)
+			      .orient("left")
+			      .ticks(5)
+			}
+
+			// Get the data
+			d3.csv("data2.csv", function(error, data) {
+			    data.forEach(function(d) {
+			        d.date = parseDate(d.date);
+			        d.close = +d.close;
+			    });
+
+			    // Scale the range of the data
+			    x.domain(d3.extent(data, function(d) { return d.date; }));
+			    y.domain([0, d3.max(data, function(d) { return d.close; })]);
+
+			    // Add the filled area
+			    svg.append("path")
+			        .datum(data)
+			        .attr("class", "area")
+			        .attr("d", area)
+
+			    // Draw the x Grid lines
+			    svg.append("g")
+			        .attr("class", "grid")
+			        .attr("transform", "translate(0," + height + ")")
+			        .call(make_x_axis()
+			            .tickSize(-height, 0, 0)
+			            .tickFormat("")
+			        )
+			        
+
+			    // Draw the y Grid lines
+			    svg.append("g")            
+			        .attr("class", "grid")
+			        .call(make_y_axis()
+			            .tickSize(-width, 0, 0)
+			            .tickFormat("")
+			        )
+
+			    // Add the valueline path.
+			    svg.append("path")
+			        .attr("d", valueline(data));
+
+			    // Add the X Axis
+			    svg.append("g")
+			        .attr("class", "x axis")
+			        .attr("transform", "translate(0," + height + ")")
+			        .call(xAxis);
+
+			    // Add the Y Axis
+			    svg.append("g")
+			        .attr("class", "y axis")
+			        .call(yAxis);
+
+			    // Add the text label for the X axis
+			    svg.append("text")
+			        .attr("transform",
+			              "translate(" + (width/2) + " ," + (height+margin.bottom) + ")")
+			        .style("text-anchor", "middle")
+			        .text("Date");
+
+			    // Add the white background to the y axis label for legibility
+			    svg.append("text")
+			        .attr("transform", "rotate(-90)")
+			        .attr("y", 6)
+			        .attr("x", margin.top - (height / 2))
+			        .attr("dy", ".71em")
+			        .style("text-anchor", "end")
+			        .attr("class", "shadow")
+			        .text("Price ($)");
+
+			    // Add the text label for the Y axis
+			    svg.append("text")
+			        .attr("transform", "rotate(-90)")
+			        .attr("y", 6)
+			        .attr("x", margin.top - (height / 2))
+			        .attr("dy", ".71em")
+			        .style("text-anchor", "end")
+			        .text("Price ($)");
+
+			    // Add the title
+			    svg.append("text")
+			        .attr("x", (width / 2))     
+			        .attr("y", 0 - (margin.top / 2))
+			        .attr("text-anchor", "middle")
+			        .style("font-size", "16px")
+			        .style("text-decoration", "underline")
+			        .text("Price vs Date Graph");
+
+
+			    // Define the div for the tooltip
+				var div = d3.select(".ChartBox").append("div")	
+				    .attr("class", "Tooltip")				
+				    .style("opacity", 0);
+
+
+			    // Add the scatterplot
+				svg.append("g")
+					.attr('class','CircleG')
+					.selectAll('dot')	
+			        .data(data)		
+			    		.enter().append("circle")								
+				        .attr("r", 3)		
+				        .attr("cx", function(d) { return x(d.date); })		 
+				        .attr("cy", function(d) { return y(d.close); })
+				        .on("mousemove", function(e) {
+
+				        	var xPos = d3.event.clientX;
+				        	var yPos = d3.event.clientY;
+
+				        	console.log('xPos: '+xPos);
+				        	console.log('yPos: '+yPos);
+
+				            div.transition()		
+				                .duration(300)	
+				                .style("opacity", 1);
+
+			            	div.html("<span class='Text'>Currency Rate</span>"+formatCurrency(e.close))	
+
+			            		var DocWidth = $(document).width(),
+				                	DocHeight = $(document).height(),
+				                	ChartH = $('.ChartBox').innerHeight(),
+				                	ChartW = $('.ChartBox').innerWidth(),
+				                	OffSetLeft = $('.ChartBox').offset().left,
+				                	OffSetTop = $('.ChartBox').offset().top;
+
+				                var OffSetRight = DocWidth - (OffSetLeft+ChartW),
+				                	OffSetBottom = DocHeight - (OffSetTop+ChartH);
+
+				                console.log('DocWidth: '+DocWidth);
+				                console.log('DocHeight: '+DocHeight);
+				                console.log('ChartH: '+ChartH);
+				                console.log('ChartW: '+ChartW);
+				                console.log('OffSetLeft: '+OffSetLeft);
+				                console.log('OffSetTop: '+OffSetTop);
+				                console.log('OffSetRight: '+OffSetRight);
+				                console.log('OffSetBottom: '+OffSetBottom);
+
+				                var ToolTipHeight = $('.Tooltip').innerHeight(),
+				                	ToolTipWidth = $('.Tooltip').innerWidth();
+				                console.log('ToolTipHeight: '+ToolTipHeight);
+				                console.log('ToolTipWidth: '+ToolTipWidth);
+
+				            div
+				                .style("left", (xPos - (ToolTipWidth/2) ) + "px")
+				                .style("top", (yPos - (ToolTipHeight + 15) ) + "px")
+				                $('.Tooltip').removeClass('Top')
+				                $('.Tooltip').removeClass('Right')
+				                $('.Tooltip').removeClass('Left')  
+
+				                if(yPos - (OffSetTop+15) <= ToolTipHeight){
+				                	console.log('Top')
+				                	$('.Tooltip').addClass('Top')
+				                	div.style('top', (yPos + 30) + "px")
+				                }
+				                
+				                if((xPos - OffSetLeft) <= ToolTipWidth){
+				                	console.log('left')
+				                	$('.Tooltip').addClass('Left')
+				                	div.style("left", (xPos - 20) + "px")
+				                }
+				                
+				                if(((ChartW + OffSetLeft) - xPos) <= ToolTipWidth ){
+				                	console.log('right');
+				                	$('.Tooltip').addClass('Right')
+				                	div.style("left", ((xPos - ToolTipWidth) + 20) + "px")
+				                }
+
+			            })
+				        .on("mouseout", function(d) {		
+				            div.transition()		
+				                .duration(500)		
+				                .style("opacity", 0);	
+				        });
+
+
+			});
+
+		</script>
+	</body>
+</html>

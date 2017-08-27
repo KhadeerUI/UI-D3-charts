@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<title>D3 JS</title>
+		<style>
+
+		body {
+		  font: 12px/1.4 arial;
+		  background: rgba(0,0,0,.1);
+		  text-align: center;
+		  color: #333;
+		}
+		text {
+			fill: #555;
+		}
+		.axis path,
+		.axis line {
+		  fill: none;
+		  stroke: rgba(0,0,0,.2);
+		  shape-rendering: geometricPrecision;
+		}
+
+		.line {
+		  fill: none;
+		  stroke: #05c;
+		  stroke-width: 2.5px;
+		  display: none;
+		}
+		.CircleG circle {
+			fill: #fff;
+			stroke: #05c;
+			stroke-width: 1.5px;
+			transition: fill ease-in .2s;
+			-webkit-transition: fill ease-in .2s;
+			-ms-transition: fill ease-in .2s;
+		}
+		.CircleG circle:hover {
+			stroke-width: 2px;
+			fill: #05c;
+		}
+		div.tooltip {	
+		    position: absolute;			
+		    text-align: center;			
+		    padding: 10px 1em;			
+		    background: rgba(0,0,0,.8);
+		    color: #eee;
+		    box-shadow: 0 1px 5px rgba(0,0,0,.3);
+		    border: 0px;		
+		    border-radius: 3px;			
+		    pointer-events: none;
+		    white-space: nowrap;	
+		}
+		div.tooltip:after {
+			content: '';
+		    position: absolute;
+		    bottom: -12px;
+		    left: 50%;
+		    margin-left: -5px;
+		    border: 6px solid transparent;
+		    border-top-color: rgba(0,0,0,.9);
+		}
+		div.tooltip.top:after {
+			bottom: 100%;
+			border-top-color: transparent;
+			border-bottom-color: rgba(0,0,0,.8);
+		}
+		div.tooltip.left:after {
+			left: 20px;
+		}
+		div.tooltip.right:after {
+			left: auto;
+			right: 20px;
+		}
+		.ChartBox {
+			background: #fff;
+			box-shadow: 0 2px 3px rgba(0,0,0,.1);
+			padding: 1em;
+			border-radius: 3px;
+			display: inline-block;
+		}
+		.Grid line {
+			stroke: #f2f2f2;
+			stroke-width: 1px;
+			shape-rendering: crispEdges; 
+		}
+		.Cont {
+			display: block;
+			background: #fff;
+			padding: 1em;
+			font-size: 15px;
+			text-align: left;
+			margin: 1em;
+		}
+
+		 .zoomOut {
+		      fill: #66a;
+		      cursor: pointer;
+		  }
+		  .zoomOutText {
+		      pointer-events: none;
+		      fill : #ccc;
+		  }
+		  .zoomOverlay {
+		      pointer-events: all;
+		      fill:none;
+		  }
+		  .band {
+		      fill : rgba(0,0,0,.1);
+		      cursor: pointer;
+		  }
+
+
+		</style>
+	</head>
+	<body>
+
+	<!-- <button class="start">Animation</button>
+	<button class="reset">Reset</button> -->
+
+		<div class="ChartBox"></div>
+		<div class="Cont">
+			<h2>List of Changes</h2>
+			<ol>
+				<li>Line chart style changed to cardinal style</li>
+				<li>Added Y axis grid lines in the chart background</li>
+				<li>Line animation move start to end</li>
+				<li>Line animation completed then show circles</li>
+				<li>Customize tooltip</li>
+				<li>Tooltip position</li>
+			</ol>
+		</div>
+
+		<script src="../js/jquery.js"></script>
+		<script src="../js/d3.v3.min.js"></script>
+		
+		<script>
+
+			var bandPos = [-1, -1],
+		    	pos;
+
+			var margin = {top: 20, right: 30, bottom: 30, left: 40},
+			    width = 700 - margin.left - margin.right,
+			    height = 365 - margin.top - margin.bottom,
+			    zoomArea = { x1: 0, y1: 0, x2: width, y2: height },
+		    	drag = d3.behavior.drag();
+
+
+			// Adjust parsing of data to properly show tooltip
+			var parseDate = d3.time.format("%b %Y").parse,
+			    bisectDate = d3.bisector(function(d) { return d.date; }).left,
+			    formatValue = d3.format(",.1f"),
+			    formatCurrency = function(d) { return formatValue(d) + "%"; };
+
+			var x = d3.time.scale()
+			    .range([0, width]);
+
+			var y = d3.scale.linear()
+			    .range([height, 0]);
+
+			var xAxis = d3.svg.axis()
+			    .scale(x)
+			    .orient("bottom");
+
+			var yAxis = d3.svg.axis()
+			    .scale(y)
+			    .orient("left")
+			    .ticks(5);
+
+			var line = d3.svg.line()
+				.interpolate('cardinal')
+			    .x(function(d) { return x(d.date); })
+			    .y(function(d) { return y(d.rate); });
+
+			var svg = d3.select(".ChartBox").append("svg")
+			    .attr("width", width + margin.left + margin.right)
+			    .attr("height", height + margin.top + margin.bottom)
+			  	.append("g")
+			    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+
+
+			 // function for the x grid lines
+			function make_x_axis() {
+			    return d3.svg.axis()
+			        .scale(x)
+			        .orient("top")
+			        .ticks(0)
+			}
+
+			// function for the y grid lines
+			function make_y_axis() {
+			  return d3.svg.axis()
+			      .scale(y)
+			      .orient("right")
+			      .ticks(5)
+			}
+
+
+			 // Draw the x Grid lines
+			    svg.append("g")
+			        .attr("class", "x Grid")
+			        .attr("transform", "translate(0," + height + ")")
+			        .call(make_x_axis()
+			            .tickSize(height,0)
+			            .tickFormat("")
+			        )
+			        
+
+			    // Draw the y Grid lines
+			    svg.append("g")            
+			        .attr("class", "y Grid")
+			        .call(make_y_axis()
+			            .tickSize(width,0)
+			            .tickFormat("")
+			        )
+
+			  svg.append("g")
+			      .attr("class", "y axis")
+			      .call(yAxis)
+			    .append("text")
+			      .attr("transform", "rotate(-90)")
+			      .attr("y", 6)
+			      .attr("dy", ".71em")
+			      .style("text-anchor", "end")
+			      .text("Unemployment Rate (%)");
+			    
+
+			d3.csv("data3.csv", function(error, data) {
+			  if (error) throw error;
+
+			  data.forEach(function(d) {
+			    d.date = parseDate(d.date);
+			    d.rate = +d.rate;
+			  });
+
+			  x.domain(d3.extent(data, function(d) { return d.date; }));
+			  y.domain(d3.extent(data, function(d) { return d.rate; }));
+
+			  var band = svg.append("rect")
+			      .attr("width", 0)
+			      .attr("height", 0)
+			      .attr("x", 0)
+			      .attr("y", 0)
+			      .attr("class", "band");
+
+			  svg.append("g")
+			      .attr("class", "x axis")
+			      .attr("transform", "translate(0," + height + ")")
+			      .call(xAxis);
+
+			  svg.append("clipPath")
+			      .attr("id", "clip")
+			      .append("rect")
+			      .attr("width", width)
+			      .attr("height", height);
+
+
+
+			  // Start Animation 
+			    var path = svg.append("path")
+			        .datum(data)
+			        .attr("class", "line")
+			        .attr("d", line);
+
+			    // Variable to Hold Total Length
+			    var totalLength = path.node().getTotalLength();
+
+			    // Set Properties of Dash Array and Dash Offset and initiate Transition
+			    path
+			      .attr("stroke-dasharray", totalLength)
+			      .attr("stroke-dashoffset", totalLength)
+			     .transition() // Call Transition Method
+			      .duration(100) // Set Duration timing (ms)
+			      .ease("linear") // Set Easing option
+			      .attr("stroke-dashoffset", 0) // Set final value of dash-offset for transition
+			      .style('display','block')
+			      .each('end',end);
+
+
+			      // Define the div for the tooltip
+				  var div = d3.select("body").append("div")	
+				    .attr("class", "tooltip")				
+				    .style("opacity", 0);
+
+			      function end(){
+
+			      	// Add the scatterplot
+					svg.append("g")
+					.attr('class','CircleG')
+			    	.selectAll("dot")
+			        .data(data)			
+			    		.enter().append("circle")		
+				        .attr("r", 3)		
+				        .attr("cx", function(d) { return x(d.date); })		 
+				        .attr("cy", function(d) { return y(d.rate); })
+				        .on("mousemove", function(d) {
+
+				            div.transition()		
+				                .duration(100)	
+				                .style("opacity", 1);		
+				            div.html("<span class='Text'>Currency Rate:</span> "+ formatCurrency(d.rate));
+
+				            var xPos = d3.event.clientX,
+				        		yPos = d3.event.clientY,
+				        		tooltipH = $('.tooltip').innerHeight(),
+				        		tooltipW = $('.tooltip').innerWidth(),
+				        		BoxH = $('.ChartBox').innerHeight(),
+				        		BoxW = $('.ChartBox').innerWidth(),
+				        		offsetT = $('.ChartBox').offset().top,
+				        		offsetL = $('.ChartBox').offset().left;
+
+				        	div.style("left", ( xPos - (tooltipW/2) ) + "px")		
+				                .style("top", ( yPos - (tooltipH + 15) ) + "px");
+				            $('.tooltip').removeClass('top left right');
+
+				            if((yPos-offsetT) < tooltipH){
+				        		$('.tooltip').addClass('top');
+				        		div.style("top", ( yPos + 20 ) + "px")
+				        	}
+				        	if(((offsetL+BoxW) - xPos) < tooltipW){
+				        		$('.tooltip').addClass('right');
+				        		div.style("left", ( xPos - (tooltipW - 25) ) + "px");
+				        	}
+				        	if((xPos-offsetL) < tooltipW){
+				        		$('.tooltip').addClass('left');
+				        		div.style("left", ( xPos - 20 ) + "px")		
+				                	.style("top", ( yPos - (tooltipH + 15) ) + "px");
+				        	}
+
+
+
+				            })					
+				        .on("mouseout", function(d) {		
+				            div.transition()		
+				                .duration(500)		
+				                .style("opacity", 0);	
+				        });
+
+
+			  
+
+			   var zoomOverlay = svg.append("rect")
+			      .attr("width", width)
+			      .attr("height", height)
+			      .attr("class", "zoomOverlay")
+			      .call(drag);
+
+			    var zoomout = svg.append("g")
+			    	.attr('width', 70)
+			    	.attr('height', 20)
+			    	.attr('transform','translate(0,'+ (height+10) +')')
+
+			    zoomout.append("rect")
+			      .attr("class", "zoomOut")
+			      .attr("width", 70)
+			      .attr("height", 20)
+			      .attr("x", 0)
+			      .attr("y", 0)
+			      .on("click", function() {
+			        zoomOut();
+			      });
+
+			    zoomout.append("text")
+			      .attr("class", "zoomOutText")
+			      .attr("x", 35)
+			      .attr("y", 14)
+			      .text("Zoom Out")
+			      .style('text-anchor','middle');
+
+			    //zoom();
+
+			    drag.on("dragend", function() {
+			      var pos = d3.mouse(this);
+			      var x1 = x.invert(bandPos[0]);
+			      var x2 = x.invert(pos[0]);
+
+			      if (x1 < x2) {
+			        zoomArea.x1 = x1;
+			        zoomArea.x2 = x2;
+			      } else {
+			        zoomArea.x1 = x2;
+			        zoomArea.x2 = x1;
+			      }
+
+			      var y1 = y.invert(pos[1]);
+			      var y2 = y.invert(bandPos[1]);
+
+			      if (x1 < x2) {
+			        zoomArea.y1 = y1;
+			        zoomArea.y2 = y2;
+			      } else {
+			        zoomArea.y1 = y2;
+			        zoomArea.y2 = y1;
+			      }
+
+			      bandPos = [-1, -1];
+
+			      d3.select(".band").transition()
+			        .attr("width", 0)
+			        .attr("height", 0)
+			        .attr("x", bandPos[0])
+			        .attr("y", bandPos[1]);
+
+			      //zoom();
+			    });
+
+
+			    drag.on("drag", function() {
+
+			      var pos = d3.mouse(this);
+
+			      if (pos[0] < bandPos[0]) {
+			        d3.select(".band").
+			        attr("transform", "translate(" + (pos[0]) + "," + bandPos[1] + ")");
+			      }
+			      if (pos[1] < bandPos[1]) {
+			        d3.select(".band").
+			        attr("transform", "translate(" + (pos[0]) + "," + pos[1] + ")");
+			      }
+			      if (pos[1] < bandPos[1] && pos[0] > bandPos[0]) {
+			        d3.select(".band").
+			        attr("transform", "translate(" + (bandPos[0]) + "," + pos[1] + ")");
+			      }
+
+			      //set new position of band when user initializes drag
+			      if (bandPos[0] == -1) {
+			        bandPos = pos;
+			        d3.select(".band").attr("transform", "translate(" + bandPos[0] + "," + bandPos[1] + ")");
+			      }
+
+			      d3.select(".band").transition().duration(1)
+			        .attr("width", Math.abs(bandPos[0] - pos[0]))
+			        .attr("height", Math.abs(bandPos[1] - pos[1]));
+			    });
+
+
+			    function zoom() {
+			      //recalculate domains
+			      if (zoomArea.x1 > zoomArea.x2) {
+			        x.domain([zoomArea.x2, zoomArea.x1]);
+			      } else {
+			        x.domain([zoomArea.x1, zoomArea.x2]);
+			      }
+
+			      if (zoomArea.y1 > zoomArea.y2) {
+			        y.domain([zoomArea.y2, zoomArea.y1]);
+			      } else {
+			        y.domain([zoomArea.y1, zoomArea.y2]);
+			      }
+
+			      //update axis and redraw lines
+			      var t = svg.transition().duration(750);
+			      t.select(".x.axis").call(xAxis);
+			      t.select(".y.axis").call(yAxis);
+
+			      t.selectAll(".line").attr("d", line); 
+			    }
+
+			    var zoomOut = function() {
+			      x.domain([0, width]);
+			      y.domain([0, height]);
+
+			      var t = svg.transition().duration(750);
+			      t.select(".x.axis").call(xAxis);
+			      t.select(".y.axis").call(yAxis);
+
+			      t.selectAll(".line").attr("d", line);     
+			    }	
+
+
+			
+			  
+			      }
+
+			    
+
+			});
+
+			</script>
+	</body>
+</html>

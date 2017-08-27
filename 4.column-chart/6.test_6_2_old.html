@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>D3 JS</title>
+		<link href="../css/style.css" rel="stylesheet">
+		<style>
+			body {
+				text-align: center;
+			}
+			.Col {
+				display: inline-block;
+				width: 70%;
+				padding: 1em;
+				font-size: 12px;
+			}
+			.ChartBox {
+				box-shadow: 0 2px 3px rgba(0,0,0,.1);
+				background: #fff;
+				padding: 1em;
+				border-radius: 3px;
+				position: relative;
+			}
+			.ChartBox svg {
+				width: 100%;
+				height: 100%;
+			}
+			.Axis path, .Axis line  {
+				fill: none;
+				stroke: rgba(0,0,0,.3);
+			}
+			rect {
+				opacity: .9;
+				transition: opacity ease .2s;
+			}
+			rect:hover {
+				opacity: 1;
+			}
+			.Tooltip {
+				opacity: 0;
+				display: inline-block;
+				background: rgba(0,0,0,.8);
+				color: #eee;
+				padding: 10px 1em;
+				border-radius: 3px;
+				position: absolute;
+				white-space: nowrap;
+				box-shadow: 0 1px 5px rgba(0,0,0,0.3);
+				white-space: nowrap;
+			}
+			.Tooltip:after {
+				content: '';
+				position: absolute;
+				left: 50%;
+				top: 100%;
+				border: 5px solid transparent;
+				border-top-color: rgba(0,0,0,.8);
+				margin-left: -5px;
+			}
+			.Tooltip.right:after {
+				left: 100%;
+				top: 50%;
+				margin-top: -5px;
+				margin-left: auto;
+				border-top-color: transparent;
+				border-left-color: rgba(0,0,0,.89);
+			}
+			.Grid .tick {
+				stroke: #f2f2f2;
+			}
+			.Cont {
+				display: block;
+				background: #fff;
+				padding: 1em;
+				font-size: 15px;
+				text-align: left;
+				margin: 1em;
+			}
+			@media (max-width: 767px){
+				.Col {
+					display: block;
+					width: 100%;
+				}
+			}
+		</style>
+	</head>
+	<body>
+
+		<div class="Col">
+			<div class="ChartBox"></div>
+		</div>
+		<div class="Cont">
+			<h2>List of Changes</h2>
+			<ol>
+				<li>Added Y axis grid lines in the chart background</li>
+				<li>Rectangle animation</li>
+				<li>Tooltip positions</li>
+			</ol>
+		</div>
+
+		<script src="../js/jquery.js"></script>
+		<script src="../js/d3.v3.min.js"></script>
+		<script>
+
+			var vData = [
+						  {'name': 'A','value': 300},
+						  {'name': 'B','value': 150},
+						  {'name': 'C','value': 300},
+						  {'name': 'D','value': 550},
+						  {'name': 'E','value': 700},
+						  {'name': 'F','value': 600},
+						  {'name': 'G','value': 800},
+						  {'name': 'H','value': 600},
+						  {'name': 'I','value': 300},
+						  {'name': 'J','value': 350},
+						  {'name': 'K','value': 400},
+						  {'name': 'L','value': 600},
+						  {'name': 'M','value': 1000},
+						  {'name': 'N','value': 800},
+						  {'name': 'O','value': 700},
+						  {'name': 'P','value': 600},
+						  {'name': 'Q','value': 800},
+						  {'name': 'R','value': 300},
+						  {'name': 'S','value': 200},
+						  {'name': 'T','value': 100},
+						  {'name': 'U','value': 500},
+						  {'name': 'V','value': 600},
+						  {'name': 'W','value': 800},
+						  {'name': 'X','value': 900},
+						  {'name': 'Z','value': 1000}
+						];
+			
+			var vMargin = {top:20, right:20, bottom: 30, left:40},
+				vWidth = parseInt(d3.select('.ChartBox').style('width')) - vMargin.left - vMargin.right,
+				vHeight = 400 - vMargin.top - vMargin.bottom;
+
+			var x = d3.scale.ordinal()
+				.domain(vData.map(function(d){ return d.name }))
+				.rangeRoundBands([0,vWidth],.1);
+
+			var y = d3.scale.linear()
+				.domain([0,d3.max(vData,function(d){ return d.value })])
+				.range([vHeight,0]);
+
+			var xAxis = d3.svg.axis()
+				.scale(x)
+				.orient('bottom');
+
+			var yAxis = d3.svg.axis()
+				.scale(y)
+				.orient('left');
+
+			var yAxisGrid = d3.svg.axis()
+				.scale(y)
+				.orient('left')
+				.tickSize(-vWidth,0)
+				.tickFormat('')
+
+			var vSvg = d3.select('.ChartBox').append('svg')
+				.attr('width', vWidth + vMargin.left + vMargin.right)
+				.attr('height', vHeight + vMargin.top + vMargin.bottom)
+				.append('g')
+				.attr('transform','translate('+ vMargin.left +','+ vMargin.top +')');
+
+			vSvg.append('g')
+				.attr('class','x Axis')
+				.attr('transform','translate(0,'+ vHeight +')')
+				.call(xAxis);
+
+			vSvg.append('g')
+				.attr('class','y Axis')
+				.call(yAxis);
+
+			vSvg.append('g')
+				.attr('class','Grid')
+				.call(yAxisGrid)
+
+			var vBar = vSvg.append('g')
+				.attr('class','Barg');
+
+			vBar.selectAll('rect')
+				.data(vData)
+				.enter().append('rect')
+				.attr('fill','#05c')
+				.attr('y',vHeight)
+				.attr('height', 0)
+				.transition()
+				.duration(1000)
+				.ease('elastic')
+				.delay(function(d,i){ return i*50 })
+				.attr('width', x.rangeBand())
+				.attr('height', function(d){ return vHeight - y(d.value) })
+				.attr('x',function(d){ return x(d.name) })
+				.attr('y',function(d){ return y(d.value) })
+
+			vBar.selectAll('rect')
+				.on('mouseover',function(d,i){
+					
+					var vTooltip = d3.select('.ChartBox').append('div')
+						.attr('class','Tooltip')
+						.style('opacity',0);
+
+					vTooltip.transition()
+						.duration(500)
+						.style('opacity',1);
+
+					vTooltip.html( (i+1) + ' Value: '+ d.value);
+
+					var vTtW = $('.Tooltip').innerWidth(),
+						vTtH = $('.Tooltip').innerHeight(),
+						vBarW = d3.select(this).attr('width'),
+						vBarH = d3.select(this).attr('height'),
+						vBarOfL = $(this).offset().left,
+						vBarOfT = $(this).offset().top,
+						vChartBoxOfL = $('.ChartBox').offset().left,
+						vChartBoxOfT = $('.ChartBox').offset().top;
+
+						console.log(vBarH)
+
+					vTooltip.style('left', (vBarOfL - vChartBoxOfL) - ((vTtW - vBarW)/2) +'px')
+						.style('top', (vBarOfT - vChartBoxOfT) - (vTtH+10) +'px');
+
+					if((vBarOfT - vChartBoxOfT) <= (vTtH+10)){
+						vTooltip.style('top', (vBarOfT - vChartBoxOfT) +'px')
+					}
+
+				})
+				.on('mouseout',function(d){
+					d3.select('.Tooltip').remove();
+				})
+
+				d3.select(window).on('resize',resize);
+
+				function resize(){
+
+					var vWidth = parseInt(d3.select('svg').style('width')) - vMargin.left - vMargin.right,
+						vHeight = parseInt(d3.select('svg').style('height')) - vMargin.top - vMargin.bottom;
+
+					var x = d3.scale.ordinal()
+						.domain(vData.map(function(d){ return d.name }))
+						.rangeRoundBands([0,vWidth],.1);
+
+					var y = d3.scale.linear()
+						.domain([0,d3.max(vData,function(d){ return d.value })])
+						.range([vHeight,0]);
+
+					var xAxis = d3.svg.axis()
+						.scale(x)
+						.orient('bottom')
+						.ticks(vHeight/50)						
+
+					var yAxis = d3.svg.axis()
+						.scale(y)
+						.orient('left')
+						.ticks(vWidth/100)
+
+					var yAxisGrid = d3.svg.axis()
+						.scale(y)
+						.orient('left')
+						.tickSize(-vWidth,0)
+						.tickFormat('')
+						.ticks(vHeight/50)
+
+					vSvg.select('.x.Axis')
+						.attr('transform','translate(0,'+ vHeight +')')
+						.call(xAxis);
+
+					vSvg.select('.y.Axis')
+						.call(yAxis);
+
+					vSvg.select('.Grid')
+						.call(yAxisGrid)
+
+					vBar.selectAll('rect')
+						.attr('height', 0)
+						.attr('y',vHeight)
+						.transition()
+						.duration(1000)
+						.ease('elastic')
+						.delay(function(d,i){ return i*50 })
+						.attr('width', x.rangeBand())
+						.attr('height', function(d){ return vHeight - y(d.value) })
+						.attr('x',function(d){ return x(d.name) })
+						.attr('y',function(d){ return y(d.value) })
+						.attr('fill','#05c')
+
+				}
+				resize();
+
+		</script>
+	</body>
+</html>

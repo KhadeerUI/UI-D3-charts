@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+  background: rgba(0,0,0,.1);
+  font: 12px/1.4 arial;
+  text-align: center;
+  list-style-position: inside;
+  color: #333;
+}
+text {
+  fill: #555;
+}
+.ChartBox {
+    padding: 1em;
+    display: inline-block;
+    background: #fff;
+    box-shadow: 0 2px 3px rgba(0,0,0,.1);
+    border-radius: 3px;
+    position: relative;
+}
+.axis path, .axis line {
+      fill: none;
+      stroke: rgba(0,0,0,.2);
+      shape-rendering: crispEdges;
+  }
+  path.line {
+      fill: none;
+      stroke-width: 1px;
+  }
+  .GridLines line {
+    stroke: rgba(0,0,0,.05);
+    shape-rendering: crispEdges;
+  }
+  .Tooltip {
+    line-height: 1;
+    padding: 10px 15px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #eee;
+    border-radius: 3px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    position: absolute;
+  }
+  /* Creates a small triangle extender for the tooltip */
+  .Tooltip:after {
+    content: '';
+    position: absolute;
+    right: 100%;
+    top: 50%;
+    margin-top: -6px;
+    border: 6px solid transparent;
+    border-right-color: rgba(0,0,0,.8);
+  }
+  .Tooltip.Right:after {
+	right: auto;
+	left: 100%;
+	border-right-color: transparent;
+	border-left-color: rgba(0,0,0,.8);
+  }
+  .tile {
+  	fill-opacity: 1;
+  	transition: fill-opacity ease .5s;
+  }
+  .tile:hover {
+  	fill-opacity: .5;
+  }
+  .Cont {
+    display: block;
+    background: #fff;
+    padding: 1em;
+    font-size: 15px;
+    text-align: left;
+    margin: 1em;
+}
+.Legends ul {
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+}
+.Legends ul li {
+  padding: 1em 1em .2em;
+  line-height: 1.2;
+  display: inline-block;
+}
+.Legends li > :first-child, .Legends li > :last-child {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 5px;
+}
+.Legends li > :last-child {
+  margin-right: 0;
+  color: #555;
+}
+.Legends.Right {
+  width: 150px;
+  vertical-align: top;
+  display: inline-block;
+}
+.Legends.Right ul {
+  margin-top: 0;
+}
+.Legends.Right ul li {
+  text-align: left;
+  padding: 10px 0;
+  display: block;
+}
+.Legends.Right li > :first-child {
+  margin-right: 0;
+  width: 35px;
+}
+.Legends.Right li > :last-child {
+  width: calc(100% - 35px)
+}
+.Legends li line {
+  stroke-width: 2.5px;
+}
+
+
+
+
+</style>
+</head>
+<body>
+
+<div class="ChartBox"></div>
+<div class="Cont">
+  <h2>List of Changes</h2>
+  <ol>
+    <li>Added animation</li>
+    <li>Added tooltip for each block and also left right position</li>
+  </ol>
+</div>
+
+<script src="../../js/jquery.js"></script>
+<script src="../../js/d3.v3.min.js"></script>
+<script>
+
+	var margin = {top: 20, right: 20, bottom: 50, left: 80},
+      width = 960 - margin.left - margin.right,
+      height = 500 - margin.top - margin.bottom;
+
+  var parseDate = d3.time.format("%Y-%m-%d").parse,
+      formatDate = d3.time.format("%b %d");
+
+  var x = d3.time.scale()
+  		.range([0, width]),
+      y = d3.scale.linear()
+      	.range([height, 0]),
+      color = d3.scale.linear()
+      	.range(["#ccc","#05c"]);
+      //z = d3.scale.category20c();
+
+  // The size of the buckets in the CSV data file.
+  // This could be inferred from the data if it weren't sparse.
+  var xStep = 864e5,
+      yStep = 100;
+
+  var xAxis = d3.svg.axis()
+    	.scale(x)
+    	.ticks(d3.time.days)
+    	.tickFormat(formatDate)
+    	.orient("bottom");
+
+  var yAxis = d3.svg.axis()
+		.scale(y)
+		.orient("left");
+
+  var svg = d3.select(".ChartBox").append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+  d3.csv("data.csv", function(error, buckets) {
+    if (error) throw error;
+
+    // Coerce the CSV data to the appropriate types.
+    buckets.forEach(function(d) {
+      d.date = parseDate(d.date);
+      d.bucket = +d.bucket;
+      d.count = +d.count;
+    });
+
+    // Compute the scale domains.
+    x.domain(d3.extent(buckets, function(d) { return d.date; }));
+    y.domain(d3.extent(buckets, function(d) { return d.bucket; }));
+    color.domain([0, d3.max(buckets, function(d) { return d.count; })]);
+
+    // Extend the x- and y-domain to fit the last bucket.
+    // For example, the y-bucket 3200 corresponds to values [3200, 3300].
+    x.domain([x.domain()[0], +x.domain()[1] + xStep]);
+    y.domain([y.domain()[0], y.domain()[1] + yStep]);
+
+    // Add an x-axis with label.
+    svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis)
+      .append("text")
+        .attr("class", "label")
+        .attr("x", width)
+        .attr("y", margin.bottom -2)
+        .attr("text-anchor", "end")
+        .text("Date");
+
+    // Add a y-axis with label.
+    svg.append("g")
+        .attr("class", "y axis")
+        .call(yAxis)
+      .append("text")
+        .attr("class", "label")
+        .attr("y", -margin.left + 20)
+        .attr("text-anchor", "end")
+        .attr("transform", "rotate(-90)")
+        .text("Value");
+
+    svg.append('g')
+      .attr('class','GridLines')
+      .selectAll('.GridLines line')
+      .data(y.ticks(10))
+      .enter().append('line')
+      .attr('x2',width)
+      .attr('y1',y)
+      .attr('y2',y);
+
+    // Display the tiles for each non-zero bucket.
+    // See http://bl.ocks.org/3074470 for an alternative implementation.
+    svg.selectAll(".tile")
+        .data(buckets)
+      .enter().append("rect")
+        .attr("class", "tile")
+        .style({
+        	'fill': function(d){ return color(d.count) }
+        })
+        .attr('width', 0)
+        .attr('height', 0)
+        .attr("y", function(d) { return y(d.bucket + 0); })
+        .transition()
+        .duration(500)
+        .attr("x", function(d) { return x(d.date); })
+        .attr("y", function(d) { return y(d.bucket + yStep); })
+        .attr("width", x(xStep) - x(0))
+        .attr("height",  y(0) - y(yStep))
+
+    svg.selectAll(".tile")
+    	.on('mouseover',function(d){
+    		tooltip = d3.select('.ChartBox').append('div')
+    			.attr('class','Tooltip')
+    			.style('opacity',0);
+    		tooltip.transition()
+    			.duration(500)
+    			.style('opacity',1);
+    		tooltip.html('Count: '+ d.count);
+
+    		var tooltipWidth = $('.Tooltip').innerWidth(),
+    			tooltipHeight = $('.Tooltip').innerHeight(),
+    			boxWidth = $('.ChartBox').innerWidth(),
+    			boxHeight = $('.ChartBox').innerHeight(),
+    			boxofL = $('.ChartBox').offset().left,
+    			boxofT = $('.ChartBox').offset().top,
+    			RectWidth = parseInt(d3.select('.tile').attr('width')),
+    			RectHeight = parseInt(d3.select('.tile').attr('height')),
+    			RectofL = $(this).offset().left,
+    			RectofT = $(this).offset().top;
+
+    			tooltip.style({
+    				left: ((RectofL - boxofL) + RectWidth + 10) + 'px',
+    				top: ((RectofT - boxofT) - (tooltipHeight - RectHeight)/2) + 'px'
+    			})
+    			if( (boxWidth/2) <= (RectofL - boxofL) ){
+    				tooltip.classed('Right',true);
+    				tooltip.style({
+	    				left: ((RectofL - boxofL) - tooltipWidth - 10) + 'px'
+	    			})
+    			}
+
+    	})
+    	.on('mouseout',function(){
+    		d3.select('.Tooltip').remove();
+    	})
+
+        /*============= Legends ==============*/
+        var legends = d3.select('.ChartBox').append('div')
+          .attr('class','Legends') // ====== if legends right side add class name 'Right'
+          //.classed('Right',true)
+          .append('ul');
+        var legend = legends.selectAll('.Legend')
+          .data(color.domain())
+          .enter().append('li')
+          .attr('class','Legend');
+        legend.append('svg')
+          .attr('width', 25)
+          .attr('height', 10)
+          .append('line')
+          .attr('x1', 0)
+          .attr('x2', 25)
+          .attr('y1', 5)
+          .attr('y2', 5)
+          .attr('stroke',color)
+        legend.append('span')
+          .text(function(d){ return 'Count '+ "'"+d+"'" });
+        /* ========== End Legends ========= */
+
+    
+  });
+
+</script>
+</body>
+</html>

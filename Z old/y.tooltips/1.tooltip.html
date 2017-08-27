@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>D3 JS</title>
+</head>
+<body>
+  
+  <h1>Positioning a Tooltip on a SVG</h1>
+  <p>
+    SVG graphics are made up of DOM elements, and can respond to user events: for example, a mouseover event listener can be used to trigger a tooltip display.  But getting that tooltip where you want it is complicated by the complex SVG coordinate system.  Mousing over any of the coloured circles below will cause six tooltips to appear (seven including the browser's title text), each positioned with a different method.
+  </p>
+  <svg viewBox="0 0 400 300">
+      <g id="circle-group" 
+         transform="rotate(10) translate(20,-5)">
+        
+          <circle r="25" cx="50" cy="50" fill="red"/>
+          <g class="tooltip css" transform="translate(50,50)">
+            <rect x="-3em" y="-45" width="6em" height="1.25em"/>
+            <text y="-45" dy="1em" text-anchor="middle" fill="red">
+              SVG/CSS Tip</text>
+          </g>
+        
+          <circle r="25" cx="200" cy="50" fill="LightSeaGreen"/>
+          <g class="tooltip css" transform="translate(200,50)">
+            <rect x="-3em" y="-45" width="6em" height="1.25em"/>
+            <text y="-45" dy="1em" text-anchor="middle" fill="LightSeaGreen">
+              SVG/CSS Tip</text>
+          </g>
+        
+          <circle r="25" cx="350" cy="50" fill="orange"/>
+          <g class="tooltip css" transform="translate(350,50)">
+            <rect x="-3em" y="-45" width="6em" height="1.25em"/>
+            <text y="-45" dy="1em" text-anchor="middle" fill="orange">
+              SVG/CSS Tip</text>
+          </g>
+        
+          <circle r="25" cx="50" cy="200" fill="cornflowerblue"/>
+          <g class="tooltip css" transform="translate(50,200)">
+            <rect x="-3em" y="-45" width="6em" height="1.25em"/>
+            <text y="-45" dy="1em" text-anchor="middle" fill="cornflowerblue">
+              SVG/CSS Tip</text>
+          </g>
+        
+          <circle r="25" cx="200" cy="200" fill="DarkOrchid"/>
+          <g class="tooltip css" transform="translate(200,200)">
+            <rect x="-3em" y="-45" width="6em" height="1.25em"/>
+            <text y="-45" dy="1em" text-anchor="middle" fill="DarkOrchid">
+              SVG/CSS Tip</text>
+          </g>
+        
+          <circle r="25" cx="350" cy="200" fill="ForestGreen"/>
+          <g class="tooltip css" transform="translate(350,200)">
+            <rect x="-3em" y="-45" width="6em" height="1.25em"/>
+            <text y="-45" dy="1em" text-anchor="middle" fill="ForestGreen">
+              SVG/CSS Tip</text>
+          </g>
+          
+      </g>
+      <g transform="scale(1.2)">
+          <g class="tooltip exact">
+              <rect width="4em" height="1.25em"/>
+              <text dy="1em" x="2em" text-anchor="middle">
+                SVG Tip</text>
+          </g>
+      </g>
+      <g transform="scale(0.9)">
+          <g class="tooltip mouse">
+              <!-- The rectangle and text are positioned 
+                   to the right and above the <g> element's
+                   0,0 point, purely to help with all the 
+                   overlapping tooltips! -->
+            <rect width="7em" height="2.5em"  
+                    x="-7em" y="-2.5em"/>
+            <text x="-3.5em" y="-2.5em" text-anchor="middle">
+              <tspan dy="1em">Mouse-tracking</tspan>
+              <tspan x="-3.5em" dy="1.25em">SVG Tip</tspan>
+            </text>
+          </g>
+      </g>
+  </svg>
+  <div class="absolute tooltip">Absolute HTML Tip</div>
+  <div class="fixed tooltip">Fixed HTML Tip</div>
+  <div class="mouse tooltip" >Mouse-tracking HTML Tip</div>
+  <button id="wiggle" type="button">Wiggle the SVG</button>
+
+  <p>A quick run-down of the pros and cons of each type of tooltip:</p>
+  <dl>
+    <dt>Title text tooltips</dt>
+    <dd><i>Pro:</i> Quick and easy, just set the title attribute of the SVG element. <i>Con:</i> Ugly and out of your control.  Also, Chrome doesn't display them inside CodePen iFrames; not sure what's going on there.
+    </dd>
+    <dt>SVG tooltips</dt>
+    <dd><i>Pro:</i> Contained within your SVG code, scale with the SVG. <i>Con:</i> An opaque background requires a separate rectangle element, which is difficult to size properly with the text while remaining responsive to user's font preferences; line breaks have to be hard-coded as separately-positioned text spans.  Webkit browsers don't respect "overflow:visible" on SVG, so the tip will be cropped if it overlaps the edge of the image.
+    </dd>
+    <dt>HTML tooltips</dt>
+    <dd><i>Pro:</i> The preferred choice; an absolutely positioned <code>&lt;div&gt;</code> that can contain formatted, wrapping text. <i>Con:</i> You have to figure out how to convert between the SVG coordinate system and the page coordinates you use for absolutely positioning your tooltip.  But that's why you're here.  It's all commented up in the code!
+    </dd>
+  </dl>
+  <p>And the pros and cons of each positioning method:</p>
+  <dl>
+    <dt>CSS hover-revealed tooltips</dt>
+    <dd><i>Pro:</i> No Javascript required, position them where you want them when you create the SVG graphic. <i>Con:</i> Requires a separate tooltip for every object, so your code gets repetitive.  The tip has to be a sibling of the element that triggers it, so it has to be an SVG tip, with the corresponding formatting limitations.  For pro or con, it will also be caught up in any transformations (e.g. rotations, scale) in that coordinate system.
+    </dd>
+    <dt>Mouse-tracking tooltips</dt>
+    <dd><i>Pro:</i> Easier to position, and the user can move the mouse if they block something underneath. <i>Con:</i> Kind of annoying, floating around difficult to read.  More importantly, they react to every mousemove event, slowing down the code.
+    </dd>
+    <dt>Positioned tooltips</dt>
+    <dd><i>Pro:</i> Neat and exact, and you can position them in an appropriate location relative to the underlying content. <i>Con:</i> If the user doesn't agree with your determination of the appropriate position, they can't do anything about it.
+    </dd>
+  </dl>
+  <p> If you want to confirm that the positions of the tooltips adjust to the current state of the SVG, press "Wiggle the SVG" to randomly shift and tilt the circles or resize the browser to change the SVG scale.  Note, however, that if you have any tooltips visible during the shift, I don't currently have any code to update their positions as things move.</p>
+  <p><b><i>P.S.</i></b>  If you're in "Edit pen" view and are only getting the CSS tooltip, press the big blue "Run" button on the Javascript panel. </p>
+
+
+  <script src="http://d3js.org/d3.v3.min.js"></script>
+  <script>
+    
+      var tooltip = d3.selectAll(".tooltip:not(.css)");
+      var HTMLabsoluteTip = d3.select("div.tooltip.absolute");
+      var HTMLfixedTip = d3.select("div.tooltip.fixed");
+      var HTMLmouseTip = d3.select("div.tooltip.mouse");
+      var SVGexactTip = d3.select("g.tooltip.exact");
+      var SVGmouseTip = d3.select("g.tooltip.mouse");
+      /* If this seems like a lot of different variables,
+         remember that normally you'd only implement one 
+         type of tooltip! */
+
+      /* I'm using d3 to add the event handlers to the circles
+         and set positioning attributes on the tooltips, but
+         you could use JQuery or plain Javascript. */
+      d3.select("svg").select("g")
+          .selectAll("circle")
+
+          /***** Easy but ugly tooltip *****/ 
+          .attr("title", "Automatic Title Tooltip") 
+
+          .on("mouseover", function () {
+              tooltip.style("opacity", "1");
+            
+              /* You'd normally set the tooltip text
+                 here, based on data from the  element
+                 being moused-over; I'm just setting colour. */
+              tooltip.style("color", this.getAttribute("fill") );
+            /* Note: SVG text is set in CSS to link fill colour to 
+               the "color" attribute. */
+            
+            
+              /***** Positioning a tooltip precisely
+                     over an SVG element *****/ 
+              
+              /***** For an SVG tooltip *****/ 
+              
+              //"this" in the context of this function
+              //is the element that triggered this event handler
+              //which will be one of the circle elements.
+              var tooltipParent = SVGexactTip.node().parentElement;
+              var matrix = 
+                      this.getTransformToElement(tooltipParent)
+                          .translate(+this.getAttribute("cx"),
+                               +this.getAttribute("cy"));
+              
+              //getTransformToElement returns a matrix
+              //representing all translations, rotations, etc.
+              //to convert between two coordinate systems.
+              //The .translate(x,y) function adds an additional 
+              //translation to the centre of the circle.
+              
+              //the matrix has values a, b, c, d, e, and f
+              //we're only interested in e and f
+              //which represent the final horizontal and vertical
+              //translation between the top left of the svg and 
+              //the centre of the circle.
+              
+              //we get the position of the svg on the page
+              //using this.viewportElement to get the SVG
+              //and using offsetTop and offsetLeft to get the SVG's
+              //position relative to the page.
+              SVGexactTip
+                  .attr("transform", "translate(" + (matrix.e)
+                            + "," + (matrix.f-20) + ")");
+              
+              /***** For an HTML tooltip *****/ 
+              
+              //for the HTML tooltip, we're not interested in a
+              //transformation relative to an internal SVG coordinate
+              //system, but relative to the page body
+              
+              //We can't get that matrix directly,
+              //but we can get the conversion to the
+              //screen coordinates.
+              
+              var matrix = this.getScreenCTM()
+                      .translate(+this.getAttribute("cx"),
+                               +this.getAttribute("cy"));
+              
+              //You can use screen coordinates directly to position
+              //a fixed-position tooltip        
+              HTMLfixedTip 
+                  .style("left", 
+                         (matrix.e) + "px")
+                  .style("top",
+                         (matrix.f + 3) + "px");
+              //The limitation of fixed position is that it won't
+              //change when scrolled.
+              
+              //A better solution is to calculate the position 
+              //of the page on the screen to position an 
+              //absolute-positioned tooltip:
+              HTMLabsoluteTip
+                  .style("left", 
+                         (window.pageXOffset + matrix.e) + "px")
+                  .style("top",
+                         (window.pageYOffset + matrix.f + 30) + "px");
+              
+          })
+          .on("mousemove", function () {
+              
+              /***** Positioning a tooltip using mouse coordinates *****/ 
+            
+              /* The code is shorter, but it runs every time
+                 the mouse moves, so it could slow down other
+                 processes or animation. */
+              
+              /***** For an SVG tooltip *****/ 
+             
+              var mouseCoords = d3.mouse(
+                  SVGmouseTip.node().parentElement);
+              //the d3.mouse() function calculates the mouse
+              //position relative to an SVG Element, in that 
+              //element's coordinate system 
+              //(after transform or viewBox attributes).
+              
+              //Because we're using the coordinates to position
+              //the SVG tooltip, we want the coordinates to be
+              //with respect to that element's parent.
+              //SVGmouseTip.node() accesses the (first and only)
+              //selected element from the saved d3 selection object.
+              
+              SVGmouseTip
+                  .attr("transform", "translate("
+                        + (mouseCoords[0]-10) + "," 
+                        + (mouseCoords[1] - 10) + ")");
+              
+              /***** For an HTML tooltip *****/ 
+            
+              //mouse coordinates relative to the page as a whole
+              //can be accessed directly from the click event object
+              //(which d3 stores as d3.event)
+              HTMLmouseTip
+                  .style("left", Math.max(0, d3.event.pageX - 150) + "px")
+                  .style("top", (d3.event.pageY + 20) + "px");
+          })
+          .on("mouseout", function () {
+              return tooltip.style("opacity", "0");
+          });
+
+      var circleGroup = d3.select("g#circle-group");
+      d3.select("button#wiggle").on("click", function() {
+          circleGroup.transition().duration(1000)
+              .attr("transform",
+                    "rotate("+ (20*(Math.random()-0.5)) + ")"
+                    +"translate(" + (20*(Math.random()-0.5)) +","
+                    + (20*(Math.random()-0.5)) + ")"
+                    );
+      });
+
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+  background: rgba(0,0,0,.1);
+  font: 12px/1.4 arial;
+  text-align: center;
+  list-style-position: inside;
+  color: #333;
+}
+text {
+  fill: #555;
+}
+.ChartBox {
+    padding: 1em;
+    display: inline-block;
+    background: #fff;
+    box-shadow: 0 2px 3px rgba(0,0,0,.1);
+    border-radius: 3px;
+}
+.axis path, .axis line {
+      fill: none;
+      stroke: rgba(0,0,0,.2);
+      shape-rendering: geometricPrecision;
+  }
+  .y.axis line {
+    stroke: #f2f2f2;
+  }
+  .d3-tip {
+    line-height: 1;
+    padding: 10px 15px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #eee;
+    border-radius: 3px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  }
+  /* Creates a small triangle extender for the tooltip */
+  .d3-tip:after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    border: 6px solid transparent;
+    border-top-color: rgba(0,0,0,.8);
+    margin-left: -6px;
+  }
+  path {
+	stroke: #05c;
+	stroke-width: 2.5px;
+	fill: none;
+	}
+
+
+
+
+
+</style>
+</head>
+<body>
+
+<div class="ChartBox"></div>
+
+<script src="../../js/jquery.js"></script>
+<script src="../../js/d3.v3.min.js"></script>
+<script>
+
+	var margin = {top: 30, right: 40, bottom: 30, left: 50},
+	    width = 600 - margin.left - margin.right,
+	    height = 270 - margin.top - margin.bottom;
+
+	var parseDate = d3.time.format("%d-%b-%y").parse;
+
+	var x = d3.time.scale().range([0, width]);
+	var y0 = d3.scale.linear().range([height, 0]);
+	var y1 = d3.scale.linear().range([height, 0]);
+
+	var xAxis = d3.svg.axis().scale(x)
+	    .orient("bottom").ticks(5);
+
+	var yAxisLeft = d3.svg.axis().scale(y0)
+	    .orient("left").ticks(5);
+
+	var yAxisRight = d3.svg.axis().scale(y1)
+	    .orient("right").ticks(5); 
+
+	var valueline = d3.svg.line()
+	    .x(function(d) { return x(d.date); })
+	    .y(function(d) { return y0(d.close); });
+	    
+	var valueline2 = d3.svg.line()
+	    .x(function(d) { return x(d.date); })
+	    .y(function(d) { return y1(d.open); });
+	  
+	var svg = d3.select(".ChartBox")
+	    .append("svg")
+	        .attr("width", width + margin.left + margin.right)
+	        .attr("height", height + margin.top + margin.bottom)
+	    .append("g")
+	        .attr("transform", 
+	              "translate(" + margin.left + "," + margin.top + ")");
+
+	// Get the data
+	d3.csv("data.csv", function(error, data) {
+	    data.forEach(function(d) {
+	        d.date = parseDate(d.date);
+	        d.close = +d.close;
+	        d.open = +d.open;
+	    });
+
+	    // Scale the range of the data
+	    x.domain(d3.extent(data, function(d) { return d.date; }));
+	    y0.domain([0, d3.max(data, function(d) {
+			return Math.max(d.close); })]); 
+	    y1.domain([0, d3.max(data, function(d) { 
+			return Math.max(d.open); })]);
+
+	    svg.append("path")        // Add the valueline path.
+	        .attr("d", valueline(data));
+
+	    svg.append("path")        // Add the valueline2 path.
+	        .style("stroke", "red")
+	        .attr("d", valueline2(data));
+
+	    svg.append("g")            // Add the X Axis
+	        .attr("class", "x axis")
+	        .attr("transform", "translate(0," + height + ")")
+	        .call(xAxis);
+
+	    svg.append("g")
+	        .attr("class", "y axis")
+	        .style("fill", "steelblue")
+	        .call(yAxisLeft);	
+
+	    svg.append("g")				
+	        .attr("class", "y axis")	
+	        .attr("transform", "translate(" + width + " ,0)")	
+	        .style("fill", "red")		
+	        .call(yAxisRight);
+
+	});
+
+</script>
+</body>
+</html>

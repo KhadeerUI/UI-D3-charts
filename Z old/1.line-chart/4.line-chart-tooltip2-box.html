@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<title>D3 JS</title>
+		<style>
+
+		body {
+			font: 12px/1.4 Sogoe UI;
+			background: #e5e5e5;
+			text-align: center;
+		}
+
+		.axis path,
+		.axis line {
+		  fill: none;
+		  stroke: rgba(0,0,0,.2);
+		  shape-rendering: geometricPrecision;
+		}
+
+		.axis--x path {
+		  display: none;
+		}
+
+		.line {
+		  fill: none;
+		  stroke: #05c;
+		  stroke-width: 2px;
+		  display: none;
+		}
+		.CircleG circle {
+			fill: #fff;
+			stroke: #05c;
+
+		}
+		div.tooltip {	
+		    position: absolute;			
+		    text-align: center;			
+		    padding: 10px 1em;			
+		    background: rgba(0,0,0,.8);
+		    color: #eee;
+		    box-shadow: 0 0 3px rgba(0,0,0,.3);
+		    border: 0px;		
+		    border-radius: 3px;			
+		    pointer-events: none;
+		    font-size: 12px;		
+		}
+		div.tooltip:after {
+			content: '';
+		    position: absolute;
+		    bottom: -12px;
+		    left: 50%;
+		    margin-left: -5px;
+		    border: 6px solid transparent;
+		    border-top-color: rgba(0,0,0,.8);
+		}
+		div.tooltip .Text {
+			display: block;
+		}
+		.ChartBox {
+			display: inline-block;
+			background: #fff;
+			box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+			padding: 1em;
+			border-radius: 3px;
+		}
+		.tText {
+			font-size: 26px;
+			stroke: #000;
+			fill: #fff;
+		}
+
+		</style>
+	</head>
+	<body>
+
+	<!-- <button class="start">Animation</button>
+	<button class="reset">Reset</button> -->
+
+		<div class="ChartBox"></div>
+
+		<!-- <script src="js/d3.js"></script> -->
+		<script src="../js/d3.v3.min.js"></script>
+		
+		<script>
+
+			var margin = {top: 60, right: 20, bottom: 30, left: 50},
+			    width = 700 - margin.left - margin.right,
+			    height = 365 - margin.top - margin.bottom;
+
+			// Adjust parsing of data to properly show tooltip
+			var parseDate = d3.time.format("%b %Y").parse,
+			    bisectDate = d3.bisector(function(d) { return d.date; }).left,
+			    formatValue = d3.format(",.1f"),
+			    formatCurrency = function(d) { return formatValue(d) + "%"; };
+
+			var x = d3.time.scale()
+			    .range([0, width]);
+
+			var y = d3.scale.linear()
+			    .range([height, 0]);
+
+			var xAxis = d3.svg.axis()
+			    .scale(x)
+			    .orient("bottom");
+
+			var yAxis = d3.svg.axis()
+			    .scale(y)
+			    .orient("left");
+
+			var line = d3.svg.line()
+				.interpolate('step')
+			    .x(function(d) { return x(d.date); })
+			    .y(function(d) { return y(d.rate); });
+
+			var svg = d3.select(".ChartBox").append("svg")
+			    .attr("width", width + margin.left + margin.right)
+			    .attr("height", height + margin.top + margin.bottom)
+			  	.append("g")
+			    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+			    
+
+			d3.csv("data3.csv", function(error, data) {
+			  if (error) throw error;
+
+			  data.forEach(function(d) {
+			    d.date = parseDate(d.date);
+			    d.rate = +d.rate;
+			  });
+
+			  x.domain(d3.extent(data, function(d) { return d.date; }));
+			  y.domain(d3.extent(data, function(d) { return d.rate; }));
+
+			  svg.append("g")
+			      .attr("class", "x axis")
+			      .attr("transform", "translate(0," + height + ")")
+			      .call(xAxis);
+
+			  svg.append("g")
+			      .attr("class", "y axis")
+			      .call(yAxis)
+			    .append("text")
+			      .attr("transform", "rotate(-90)")
+			      .attr("y", 6)
+			      .attr("dy", ".71em")
+			      .style("text-anchor", "end")
+			      .text("Unemployment Rate (%)");
+
+
+			  // Start Animation 
+			    var path = svg.append("path")
+			        .datum(data)
+			        .attr("class", "line")
+			        .attr("d", line);
+
+			    // Variable to Hold Total Length
+			    var totalLength = path.node().getTotalLength();
+
+			    // Set Properties of Dash Array and Dash Offset and initiate Transition
+			    path
+			      .attr("stroke-dasharray", totalLength + " " + totalLength)
+			      .attr("stroke-dashoffset", totalLength)
+			     .transition() // Call Transition Method
+			      .duration(3000) // Set Duration timing (ms)
+			      .ease("linear") // Set Easing option
+			      .attr("stroke-dashoffset", 0) // Set final value of dash-offset for transition
+			      .style('display','block');
+
+
+			    var focus = svg.append('g')
+			    	.attr('class','focus')
+			    	.style('display','none');
+
+			    focus.append('circle')
+			    	.attr('r',4)
+			    	.attr('fill','#fff')
+			    	.attr('stroke','#05c')
+			    	.attr('stroke-width','2px');
+
+			    focus.append('text')
+			    	.attr('class','tText')
+			    	.attr('x',10)
+			    	.attr('dy','.35em');
+
+			    svg.append('rect')
+			    	.attr('class','Overlay')
+			    	.attr('width',width)
+			    	.attr('height',height)
+			    	.attr('fill','none')
+			    	.style('pointer-events','all')
+			    	.on('mouseover',function(){
+			    		focus.style('display',null)
+			    	})
+			    	.on('mouseout',function(){
+			    		focus.style('display','none')
+			    	})
+			    	.on('mousemove',mousemove);
+
+			    function mousemove(){
+			    	var x0 = x.invert(d3.mouse(this)[0]),
+			    		i = bisectDate(data, x0, 1),
+			    		d0 = data[i - 1],
+			    		d1 = data[i];
+						d = x0 - d0.date - x0 ? d1:d0;
+			    	focus.attr('transform','translate('+ x(d.date) + ',' + y(d.rate) +')');
+			    	focus.select('text')
+			    		.html(formatCurrency(d.rate));
+			    }
+
+			});
+
+			</script>
+	</body>
+</html>

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+  background: rgba(0,0,0,.1);
+  font: 12px/1.4 arial;
+  text-align: center;
+  list-style-position: inside;
+  color: #333;
+}
+text {
+  fill: #555;
+}
+.ChartBox {
+    padding: 1em;
+    display: inline-block;
+    background: #fff;
+    box-shadow: 0 2px 3px rgba(0,0,0,.1);
+    border-radius: 3px;
+    position: relative;
+}
+.axis path, .axis line {
+      fill: none;
+      stroke: #ccc;
+      shape-rendering: geometricPrecision;
+  }
+  path.line {
+      fill: none;
+      stroke-width: 2.5px;
+      stroke: #05c;
+      display: none; 
+  }
+  .brush .extent {
+    fill-opacity: .1;
+  }
+  .clear-button {
+    cursor: pointer;
+  }
+  .point {
+    fill: #05c;
+    fill-opacity: .5;
+    stroke: #05c;
+    stroke-opacity: .9;
+    stroke-width: 1.5px;
+  }
+  .selected {
+    fill-opacity: 1;
+  }
+  div.tooltip { 
+    position: absolute;     
+    text-align: center;     
+    padding: 10px 1em;      
+    background: rgba(0,0,0,.8);
+    color: #eee;
+    box-shadow: 0 1px 5px rgba(0,0,0,.3);
+    border: 0px;    
+    border-radius: 3px;     
+    pointer-events: none;
+    white-space: nowrap;  
+  }
+  div.tooltip:after {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    left: 50%;
+    margin-left: -5px;
+    border: 6px solid transparent;
+    border-top-color: rgba(0,0,0,.9);
+  }
+  div.tooltip.top:after {
+    bottom: 100%;
+    border-top-color: transparent;
+    border-bottom-color: rgba(0,0,0,.8);
+  }
+  div.tooltip.left:after {
+    left: 20px;
+  }
+  div.tooltip.right:after {
+    left: auto;
+    right: 20px;
+  }
+  .CircleG circle {
+    fill: #fff;
+    stroke: #05c;
+    stroke-width: 1.5px;
+    transition: fill ease-in .2s;
+    -webkit-transition: fill ease-in .2s;
+    -ms-transition: fill ease-in .2s;
+  }
+  .CircleG circle:hover {
+    stroke-width: 2px;
+    fill: #05c;
+  }
+
+
+  .y.axis .tick line {
+    stroke: #f2f2f2;
+    shape-rendering: crispEdges;
+  }
+
+
+</style>
+</head>
+<body>
+
+<div class="ChartBox"></div>
+
+<script src="../js/jquery.js"></script>
+<script src="../js/d3.v3.min.js"></script>
+<script>
+
+
+  var margin = {top: 20, right: 30, bottom: 30, left: 40},
+      width = 700 - margin.left - margin.right,
+      height = 365 - margin.top - margin.bottom;
+
+  // Adjust parsing of data to properly show tooltip
+  var parseDate = d3.time.format("%b %Y").parse,
+      bisectDate = d3.bisector(function(d) { return d.date; }).left,
+      formatValue = d3.format(",.1f"),
+      formatCurrency = function(d) { return formatValue(d) + "%"; };
+
+  var x = d3.time.scale()
+      .range([0, width]);
+
+  var y = d3.scale.linear()
+      .range([height, 0]);
+
+  var xAxis = d3.svg.axis()
+      .scale(x)
+      .orient("bottom");
+
+  var yAxis = d3.svg.axis()
+      .scale(y)
+      .orient("left")
+      .innerTickSize(-width,0)
+      .ticks(5)
+
+  var line = d3.svg.line()
+      .interpolate('cardinal')
+      .x(function(d) { return x(d.date); })
+      .y(function(d) { return y(d.rate); });
+
+  var svg = d3.select(".ChartBox").append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+    .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("Unemployment Rate (%)");
+      
+
+  d3.csv("data4.csv", function(error, data) {
+    if (error) throw error;
+
+    data.forEach(function(d) {
+      d.date = parseDate(d.date);
+      d.rate = +d.rate;
+    });
+
+    x.domain(d3.extent(data, function(d) { return d.date; }));
+    y.domain(d3.extent(data, function(d) { return d.rate; }));
+
+    var brush = d3.svg.brush()
+      .x(x)
+      //.on('brush', brushmove)
+      .on('brushend', brushend);
+
+    svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis);
+
+    svg.append('g')
+      .classed('brush', true)
+      .call(brush)
+      .selectAll('rect')
+      .attr('height', height);
+
+    svg.append('defs').append("clipPath")
+        .attr("id", "clip")
+        .append("rect")
+        .attr("width", width)
+        .attr("height", height );
+
+    // Start Animation 
+      var path = svg.append("path")
+          .datum(data)
+          .attr("class", "line")
+          .attr('clip-path', 'url(#clip)')
+          .attr("d", line);
+
+      // Variable to Hold Total Length
+      var totalLength = path.node().getTotalLength();
+
+      // Set Properties of Dash Array and Dash Offset and initiate Transition
+      path
+        .attr("stroke-dasharray", totalLength)
+        .attr("stroke-dashoffset", totalLength)
+        .transition() // Call Transition Method
+        .duration(500) // Set Duration timing (ms)
+        .ease("linear") // Set Easing option
+        .attr("stroke-dashoffset", 0) // Set final value of dash-offset for transition
+        .style('display','block')
+        .each('end',end);
+
+        // Define the div for the tooltip
+      var div = d3.select("body").append("div") 
+        .attr("class", "tooltip")       
+        .style("opacity", 0);
+
+        function end(){
+            // Add the scatterplot
+          svg.append("g")
+            .attr('class','CircleG')
+            .attr('clip-path','url(#clip)')
+            .selectAll("dot")
+            .data(data)     
+            .enter().append("circle")   
+            .attr("r", 3)   
+            .attr("cx", function(d) { return x(d.date); })     
+            .attr("cy", function(d) { return y(d.rate); })
+            .on('mousemove', function(d){
+                div.transition()    
+                  .duration(100)  
+                  .style("opacity", 1);
+
+                div.html("<span class='Text'>Currency Rate:</span> "+ formatCurrency(d.rate));
+
+                var xPos = d3.event.clientX,
+                  yPos = d3.event.clientY,
+                  tooltipH = $('.tooltip').innerHeight(),
+                  tooltipW = $('.tooltip').innerWidth(),
+                  BoxH = $('.ChartBox').innerHeight(),
+                  BoxW = $('.ChartBox').innerWidth(),
+                  offsetT = $('.ChartBox').offset().top,
+                  offsetL = $('.ChartBox').offset().left;
+
+                  div.style("left", ( xPos - (tooltipW/2) ) + "px")   
+                        .style("top", ( yPos - (tooltipH + 15) ) + "px");
+                    $('.tooltip').removeClass('top left right');
+
+                  if((yPos-offsetT) < tooltipH){
+                    $('.tooltip').addClass('top');
+                    div.style("top", ( yPos + 20 ) + "px")
+                  }
+                  if(((offsetL+BoxW) - xPos) < tooltipW){
+                    $('.tooltip').addClass('right');
+                    div.style("left", ( xPos - (tooltipW - 25) ) + "px");
+                  }
+                  if((xPos-offsetL) < tooltipW){
+                    $('.tooltip').addClass('left');
+                    div.style("left", ( xPos - 20 ) + "px")   
+                          .style("top", ( yPos - (tooltipH + 15) ) + "px");
+                  }
+            })
+            .on('mouseout', function(d){ 
+                div.transition()    
+                    .duration(500)    
+                    .style("opacity", 0);
+            });
+
+            
+
+        }
+
+        function brushend(){
+
+          if(brush.empty()){
+            x.domain(d3.extent(data, function(d) { return d.date; }));
+            transData();
+          }
+          else{
+            x.domain(brush.extent());
+            transData();
+
+            d3.select('.brush')
+              .call(brush.clear());
+
+          }
+
+        }
+
+        function transData(){
+
+          svg.select('path.line')
+            .transition()
+            .duration(500)
+            .attr('d', line);
+
+          svg.selectAll('.CircleG circle')
+            .attr("cx", function(d) { return x(d.date); })     
+            .attr("cy", function(d) { return y(d.rate); })
+
+            
+
+        }
+
+    });
+
+</script>
+</body>
+</html>
+
